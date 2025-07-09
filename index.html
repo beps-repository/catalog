@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catalogo Beps</title>
+  <title>Catalogo</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; background: #fafafa; }
     h2 { margin-top: 40px; border-bottom: 2px solid #ddd; padding-bottom: 5px; text-transform: capitalize; }
@@ -49,14 +49,12 @@
       padding: 20px;
       display: none;
       z-index: 1000;
-      overflow: hidden;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
     }
     .scheda-prodotto img {
       width: 100%;
-      max-height: 40vh;
+      max-height: 35vh;
       object-fit: contain;
       margin-bottom: 10px;
     }
@@ -64,8 +62,11 @@
       margin-top: 0;
     }
     .scheda-prodotto .contenuto {
-      overflow: auto;
       flex-grow: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
     .btn-link {
       display: inline-block;
@@ -91,7 +92,7 @@
         grid-template-columns: repeat(2, 1fr);
       }
       .scheda-prodotto {
-        width: 100%;
+        width: 80%;
       }
     }
   </style>
@@ -117,13 +118,15 @@
       scheda.innerHTML = `
         <button class="chiudi" onclick="chiudiSchedaProdotto()">&times;</button>
         <div class="contenuto">
-          <img src="${p.image_url}" alt="${p.title}">
-          <h3>${p.title}</h3>
-          <p><strong>${p.short_description}</strong></p>
-          <p>${p.description}</p>
-          <p><strong>SKU:</strong> ${p.sku}</p>
+          <div>
+            <img src="${p.image_url}" alt="${p.title}">
+            <h3>${p.title}</h3>
+            <p><strong>${p.short_description}</strong></p>
+            <p>${p.description}</p>
+            <p><strong>SKU:</strong> ${p.sku}</p>
+          </div>
+          <a class="btn-link" href="${p.link_url}" target="_blank">Scopri la disponibilità</a>
         </div>
-        <a class="btn-link" href="${p.link_url}" target="_blank">Scopri la disponibilità</a>
       `;
       scheda.style.display = "flex";
       document.addEventListener("click", chiudiClickEsterno);
@@ -150,7 +153,7 @@
         const righe = text.split('\n').filter(r => r && !r.startsWith("#"));
         const intestazione = righe.shift().split(',').map(h => h.trim());
         const prodotti = righe.map(riga => {
-          const valori = riga.split(/,(?=(?:[^"]*\"[^"]*\")*[^"]*$)/).map(v => v.replace(/^\"|\"$/g, '').trim());
+          const valori = riga.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/).map(v => v.replace(/^\"|\"$/g, '').trim());
           const p = Object.fromEntries(intestazione.map((key, i) => [key.trim(), valori[i] || ""]));
           return p;
         });
