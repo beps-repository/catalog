@@ -47,7 +47,7 @@
   <div id="catalogo"></div>
 
   <script>
-    const csvUrl = "https://www.beps.it/it/media/feed/fb_products_beps.csv";
+    const csvUrl = "fb_products_beps.csv"; // uso locale temporaneo del CSV caricato su GitHub
 
     function getQueryParams() {
       const params = new URLSearchParams(window.location.search);
@@ -63,7 +63,7 @@
       const righe = text.split('\n').filter(r => r && !r.startsWith("#"));
       const intestazione = righe.shift().split(',');
       const prodotti = righe.map(riga => {
-        const valori = riga.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
+        const valori = riga.split(/,(?=(?:[^"\\]*\\"[^"\\]*\\")*[^"\\]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
         return Object.fromEntries(intestazione.map((key, i) => [key, valori[i]]));
       });
 
