@@ -47,7 +47,7 @@
   <div id="catalogo"></div>
 
   <script>
-    const csvUrl = "catalog_private_labels.csv";
+    const csvUrl = "https://www.beps.it/it/media/feed/catalog_private_labels.csv";
 
     function getQueryParams() {
       const params = new URLSearchParams(window.location.search);
@@ -74,10 +74,10 @@
         console.log("Totale prodotti nel CSV:", prodotti.length);
 
         const prodottiFiltrati = prodotti.filter(p => {
-          const matchMarca = !marca || (p.brand && p.brand.toLowerCase() === marca);
+          const matchMarca = !marca || (p.marca && p.marca.toLowerCase() === marca);
           const matchCategoria = !categoria || (
             p.category &&
-            p.category.toLowerCase().split('>').some(c => c.trim() === categoria)
+            p.category.toLowerCase().split('>').some(c => c.trim().toLowerCase() === categoria)
           );
           return matchMarca && matchCategoria;
         });
