@@ -16,17 +16,18 @@
     .card {
       background: #fff;
       border: 1px solid #ccc;
-      border-radius: 8px;
+      border-radius: 0;
       padding: 10px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       display: flex;
       flex-direction: column;
       height: 100%;
+      cursor: pointer;
     }
     .card img {
       max-width: 100%;
       height: auto;
-      border-radius: 4px;
+      border-radius: 0;
     }
     .card h3 {
       margin: 10px 0 5px;
@@ -36,18 +37,60 @@
       font-size: 0.9rem;
       color: #444;
     }
+    .scheda-prodotto {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 400px;
+      height: 100%;
+      background: #fff;
+      box-shadow: -2px 0 5px rgba(0,0,0,0.2);
+      padding: 20px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+    .scheda-prodotto img {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    .scheda-prodotto h3 {
+      margin-top: 0;
+    }
+    .btn-link {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 10px 15px;
+      background: #007BFF;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 4px;
+    }
+    .scheda-prodotto .chiudi {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: transparent;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
     @media (max-width: 768px) {
       .griglia {
         grid-template-columns: repeat(2, 1fr);
+      }
+      .scheda-prodotto {
+        width: 100%;
       }
     }
   </style>
 </head>
 <body>
   <div id="catalogo"></div>
+  <div class="scheda-prodotto" id="schedaProdotto"></div>
 
   <script>
-    const csvUrl = "catalog_private_labels.csv";
+    const csvUrl = "https://www.beps.it/media/feed/catalog_private_labels.csv";
 
     function getQueryParams() {
       const params = new URLSearchParams(window.location.search);
@@ -57,6 +100,35 @@
       };
     }
 
+    function apriSchedaProdotto(p) {
+      const scheda = document.getElementById("schedaProdotto");
+      scheda.innerHTML = `
+        <button class="chiudi" onclick="chiudiSchedaProdotto()">&times;</button>
+        <img src="${p.image_url}" alt="${p.title}">
+        <h3>${p.title}</h3>
+        <p><strong>${p.short_description}</strong></p>
+        <p>${p.description}</p>
+        <p><strong>SKU:</strong> ${p.sku}</p>
+        <a class="btn-link" href="${p.link_url}" target="_blank">Scopri la disponibilità</a>
+      `;
+      scheda.style.display = "block";
+      document.addEventListener("click", chiudiClickEsterno);
+    }
+
+    function chiudiSchedaProdotto() {
+      const scheda = document.getElementById("schedaProdotto");
+      scheda.style.display = "none";
+      scheda.innerHTML = "";
+      document.removeEventListener("click", chiudiClickEsterno);
+    }
+
+    function chiudiClickEsterno(event) {
+      const scheda = document.getElementById("schedaProdotto");
+      if (!scheda.contains(event.target) && !event.target.closest(".card")) {
+        chiudiSchedaProdotto();
+      }
+    }
+
     async function caricaCatalogo() {
       try {
         const response = await fetch(csvUrl);
@@ -64,15 +136,12 @@
         const righe = text.split('\n').filter(r => r && !r.startsWith("#"));
         const intestazione = righe.shift().split(',').map(h => h.trim());
         const prodotti = righe.map(riga => {
-          const valori = riga.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(v => v.replace(/^\"|\"$/g, '').trim());
+          const valori = riga.split(/,(?=(?:[^"]*\"[^"]*\")*[^"]*$)/).map(v => v.replace(/^\"|\"$/g, '').trim());
           const p = Object.fromEntries(intestazione.map((key, i) => [key.trim(), valori[i] || ""]));
           return p;
         });
 
         const { marca, categoria } = getQueryParams();
-        console.log("Filtro attivo:", { marca, categoria });
-        console.log("Totale prodotti nel CSV:", prodotti.length);
-
         const prodottiFiltrati = prodotti.filter(p => {
           const matchMarca = !marca || (p.marca && p.marca.toLowerCase() === marca);
           const matchCategoria = !categoria || (
@@ -81,8 +150,6 @@
           );
           return matchMarca && matchCategoria;
         });
-
-        console.log("Prodotti filtrati:", prodottiFiltrati.length);
 
         const categorie = {};
         prodottiFiltrati.forEach(p => {
@@ -106,8 +173,7 @@
           griglia.className = "griglia";
 
           items.forEach(p => {
-            const descrizione = p.description || "";
-            const descr = descrizione.length > 80 ? descrizione.slice(0, 80) + "..." : descrizione;
+            const descr = p.short_description || "";
             const card = document.createElement("div");
             card.className = "card";
             card.innerHTML = `
@@ -115,6 +181,7 @@
               <h3>${p.title}</h3>
               <p>${descr}</p>
             `;
+            card.addEventListener("click", () => apriSchedaProdotto(p));
             griglia.appendChild(card);
           });
 
