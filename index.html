@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catalogo Beps</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #fafafa; }
+    h2 { margin-top: 40px; border-bottom: 2px solid #ddd; padding-bottom: 5px; text-transform: capitalize; }
+    .categoria { margin-bottom: 60px; }
+    .griglia {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .card img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .card h3 {
+      margin: 10px 0 5px;
+      font-size: 1rem;
+    }
+    .card p {
+      font-size: 0.9rem;
+      color: #444;
+    }
+    @media (max-width: 768px) {
+      .griglia {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="catalogo"></div>
+
+  <script>
+    const csvUrl = "https://www.beps.it/it/media/feed/fb_products_beps.csv";
+
+    function getQueryParams() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        marca: params.get("marca")?.toLowerCase() || null,
+        categoria: params.get("categoria")?.toLowerCase() || null
+      };
+    }
+
+    async function caricaCatalogo() {
+      const response = await fetch(csvUrl);
+      const text = await response.text();
+      const righe = text.split('\n').filter(r => r && !r.startsWith("#"));
+      const intestazione = righe.shift().split(',');
+      const prodotti = righe.map(riga => {
+        const valori = riga.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
+        return Object.fromEntries(intestazione.map((key, i) => [key, valori[i]]));
+      });
+
+      const { marca, categoria } = getQueryParams();
+
+      const prodottiFiltrati = prodotti.filter(p => {
+        const matchMarca = !marca || (p.brand && p.brand.toLowerCase() === marca);
+        const matchCategoria = !categoria || (p.custom_label_2 && p.custom_label_2.toLowerCase() === categoria);
+        return matchMarca && matchCategoria;
+      });
+
+      const categorie = {};
+      prodottiFiltrati.forEach(p => {
+        const cat = p.custom_label_2 || "Senza categoria";
+        if (!categorie[cat]) categorie[cat] = [];
+        categorie[cat].push(p);
+      });
+
+      const container = document.getElementById("catalogo");
+      if (prodottiFiltrati.length === 0) {
+        container.innerHTML = "<p>Nessun prodotto trovato.</p>";
+        return;
+      }
+
+      for (const [categoria, items] of Object.entries(categorie)) {
+        const sezione = document.createElement("div");
+        sezione.className = "categoria";
+        sezione.innerHTML = `<h2>${categoria}</h2>`;
+
+        const griglia = document.createElement("div");
+        griglia.className = "griglia";
+
+        items.forEach(p => {
+          const descr = p.description.length > 80 ? p.description.slice(0, 80) + "..." : p.description;
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <img src="${p.image_link}" alt="${p.title}">
+            <h3>${p.title}</h3>
+            <p>${descr}</p>
+          `;
+          griglia.appendChild(card);
+        });
+
+        sezione.appendChild(griglia);
+        container.appendChild(sezione);
+      }
+    }
+
+    caricaCatalogo();
+  </script>
+</body>
+</html>
