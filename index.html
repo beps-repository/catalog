@@ -58,59 +58,69 @@
     }
 
     async function caricaCatalogo() {
-      const response = await fetch(csvUrl);
-      const text = await response.text();
-      const righe = text.split('\n').filter(r => r && !r.startsWith("#"));
-      const intestazione = righe.shift().split(',');
-      const prodotti = righe.map(riga => {
-        const valori = riga.split(/,(?=(?:[^"\\]*\\"[^"\\]*\\")*[^"\\]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
-        return Object.fromEntries(intestazione.map((key, i) => [key, valori[i]]));
-      });
-
-      const { marca, categoria } = getQueryParams();
-
-      const prodottiFiltrati = prodotti.filter(p => {
-        const matchMarca = !marca || (p.brand && p.brand.toLowerCase() === marca);
-        const matchCategoria = !categoria || (p.custom_label_2 && p.custom_label_2.toLowerCase() === categoria);
-        return matchMarca && matchCategoria;
-      });
-
-      const categorie = {};
-      prodottiFiltrati.forEach(p => {
-        const cat = p.custom_label_2 || "Senza categoria";
-        if (!categorie[cat]) categorie[cat] = [];
-        categorie[cat].push(p);
-      });
-
-      const container = document.getElementById("catalogo");
-      if (prodottiFiltrati.length === 0) {
-        container.innerHTML = "<p>Nessun prodotto trovato.</p>";
-        return;
-      }
-
-      for (const [categoria, items] of Object.entries(categorie)) {
-        const sezione = document.createElement("div");
-        sezione.className = "categoria";
-        sezione.innerHTML = `<h2>${categoria}</h2>`;
-
-        const griglia = document.createElement("div");
-        griglia.className = "griglia";
-
-        items.forEach(p => {
-          const descrizione = p.description ? (p.description.length > 80 ? p.description.slice(0, 80) + "..." : p.description) : "Nessuna descrizione disponibile";
-
-          const card = document.createElement("div");
-          card.className = "card";
-          card.innerHTML = `
-            <img src="${p.image_link}" alt="${p.title}">
-            <h3>${p.title}</h3>
-            <p>${descr}</p>
-          `;
-          griglia.appendChild(card);
+      try {
+        const response = await fetch(csvUrl);
+        const text = await response.text();
+        const righe = text.split('\n').filter(r => r && !r.startsWith("#"));
+        const intestazione = righe.shift().split(',').map(h => h.trim());
+        const prodotti = righe.map(riga => {
+          const valori = riga.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
+          const p = Object.fromEntries(intestazione.map((key, i) => [key.trim(), valori[i] || ""]));
+          return p;
         });
 
-        sezione.appendChild(griglia);
-        container.appendChild(sezione);
+        const { marca, categoria } = getQueryParams();
+        console.log("Filtro attivo:", { marca, categoria });
+        console.log("Totale prodotti nel CSV:", prodotti.length);
+
+        const prodottiFiltrati = prodotti.filter(p => {
+          const matchMarca = !marca || (p.brand && p.brand.toLowerCase() === marca);
+          const matchCategoria = !categoria || (p.custom_label_2 && p.custom_label_2.toLowerCase() === categoria);
+          return matchMarca && matchCategoria;
+        });
+
+        console.log("Prodotti filtrati:", prodottiFiltrati.length);
+
+        const categorie = {};
+        prodottiFiltrati.forEach(p => {
+          const cat = p.custom_label_2 || "Senza categoria";
+          if (!categorie[cat]) categorie[cat] = [];
+          categorie[cat].push(p);
+        });
+
+        const container = document.getElementById("catalogo");
+        if (prodottiFiltrati.length === 0) {
+          container.innerHTML = "<p>Nessun prodotto trovato.</p>";
+          return;
+        }
+
+        for (const [categoria, items] of Object.entries(categorie)) {
+          const sezione = document.createElement("div");
+          sezione.className = "categoria";
+          sezione.innerHTML = `<h2>${categoria}</h2>`;
+
+          const griglia = document.createElement("div");
+          griglia.className = "griglia";
+
+          items.forEach(p => {
+            const descrizione = p.description || "";
+            const descr = descrizione.length > 80 ? descrizione.slice(0, 80) + "..." : descrizione;
+            const card = document.createElement("div");
+            card.className = "card";
+            card.innerHTML = `
+              <img src="${p.image_link}" alt="${p.title}">
+              <h3>${p.title}</h3>
+              <p>${descr}</p>
+            `;
+            griglia.appendChild(card);
+          });
+
+          sezione.appendChild(griglia);
+          container.appendChild(sezione);
+        }
+      } catch (error) {
+        console.error("Errore durante il caricamento del catalogo:", error);
+        document.getElementById("catalogo").innerHTML = "<p>Errore nel caricamento del catalogo.</p>";
       }
     }
 
