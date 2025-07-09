@@ -12,7 +12,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 20px;
-      row-gap: 40px;
+      row-gap: 60px;
     }
     .card {
       background: #fff;
@@ -47,25 +47,35 @@
       background: #fff;
       box-shadow: -2px 0 5px rgba(0,0,0,0.2);
       padding: 20px;
-      overflow-y: auto;
-      z-index: 1000;
       display: none;
+      z-index: 1000;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
     .scheda-prodotto img {
       width: 100%;
+      max-height: 40vh;
+      object-fit: contain;
       margin-bottom: 10px;
     }
     .scheda-prodotto h3 {
       margin-top: 0;
     }
+    .scheda-prodotto .contenuto {
+      overflow: auto;
+      flex-grow: 1;
+    }
     .btn-link {
       display: inline-block;
       margin-top: 10px;
       padding: 10px 15px;
-      background: #007BFF;
+      background: #333;
       color: #fff;
       text-decoration: none;
       border-radius: 4px;
+      text-align: center;
     }
     .scheda-prodotto .chiudi {
       position: absolute;
@@ -91,7 +101,7 @@
   <div class="scheda-prodotto" id="schedaProdotto"></div>
 
   <script>
-        const csvUrlOriginale = "https://www.beps.it/media/feed/catalog_private_labels.csv";
+    const csvUrlOriginale = "https://www.beps.it/media/feed/catalog_private_labels.csv";
     const csvUrl = "https://corsproxy.io/?" + encodeURIComponent(csvUrlOriginale);
 
     function getQueryParams() {
@@ -106,14 +116,16 @@
       const scheda = document.getElementById("schedaProdotto");
       scheda.innerHTML = `
         <button class="chiudi" onclick="chiudiSchedaProdotto()">&times;</button>
-        <img src="${p.image_url}" alt="${p.title}">
-        <h3>${p.title}</h3>
-        <p><strong>${p.short_description}</strong></p>
-        <p>${p.description}</p>
-        <p><strong>SKU:</strong> ${p.sku}</p>
+        <div class="contenuto">
+          <img src="${p.image_url}" alt="${p.title}">
+          <h3>${p.title}</h3>
+          <p><strong>${p.short_description}</strong></p>
+          <p>${p.description}</p>
+          <p><strong>SKU:</strong> ${p.sku}</p>
+        </div>
         <a class="btn-link" href="${p.link_url}" target="_blank">Scopri la disponibilità</a>
       `;
-      scheda.style.display = "block";
+      scheda.style.display = "flex";
       document.addEventListener("click", chiudiClickEsterno);
     }
 
@@ -138,7 +150,7 @@
         const righe = text.split('\n').filter(r => r && !r.startsWith("#"));
         const intestazione = righe.shift().split(',').map(h => h.trim());
         const prodotti = righe.map(riga => {
-          const valori = riga.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/).map(v => v.replace(/^\"|\"$/g, '').trim());
+          const valori = riga.split(/,(?=(?:[^"]*\"[^"]*\")*[^"]*$)/).map(v => v.replace(/^\"|\"$/g, '').trim());
           const p = Object.fromEntries(intestazione.map((key, i) => [key.trim(), valori[i] || ""]));
           return p;
         });
