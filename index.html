@@ -47,7 +47,7 @@
   <div id="catalogo"></div>
 
   <script>
-    const csvUrl = "fb_products_beps.csv"; // uso locale temporaneo del CSV caricato su GitHub
+    const csvUrl = "catalog_private_labels.csv";
 
     function getQueryParams() {
       const params = new URLSearchParams(window.location.search);
@@ -64,7 +64,7 @@
         const righe = text.split('\n').filter(r => r && !r.startsWith("#"));
         const intestazione = righe.shift().split(',').map(h => h.trim());
         const prodotti = righe.map(riga => {
-          const valori = riga.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
+          const valori = riga.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(v => v.replace(/^\"|\"$/g, '').trim());
           const p = Object.fromEntries(intestazione.map((key, i) => [key.trim(), valori[i] || ""]));
           return p;
         });
@@ -75,7 +75,10 @@
 
         const prodottiFiltrati = prodotti.filter(p => {
           const matchMarca = !marca || (p.brand && p.brand.toLowerCase() === marca);
-          const matchCategoria = !categoria || (p.custom_label_1 && p.custom_label_1.toLowerCase().includes(categoria));
+          const matchCategoria = !categoria || (
+            p.category &&
+            p.category.toLowerCase().split('>').some(c => c.trim() === categoria)
+          );
           return matchMarca && matchCategoria;
         });
 
@@ -83,7 +86,7 @@
 
         const categorie = {};
         prodottiFiltrati.forEach(p => {
-          const cat = p.custom_label_1 || "Senza categoria";
+          const cat = p.category?.split('>').pop().trim() || "Senza categoria";
           if (!categorie[cat]) categorie[cat] = [];
           categorie[cat].push(p);
         });
@@ -108,7 +111,7 @@
             const card = document.createElement("div");
             card.className = "card";
             card.innerHTML = `
-              <img src="${p.image_link}" alt="${p.title}">
+              <img src="${p.image_url}" alt="${p.title}">
               <h3>${p.title}</h3>
               <p>${descr}</p>
             `;
