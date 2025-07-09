@@ -12,6 +12,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 20px;
+      row-gap: 40px;
     }
     .card {
       background: #fff;
@@ -41,8 +42,8 @@
       position: fixed;
       top: 0;
       right: 0;
-      width: 400px;
-      height: 100%;
+      width: 70%;
+      height: 100vh;
       background: #fff;
       box-shadow: -2px 0 5px rgba(0,0,0,0.2);
       padding: 20px;
@@ -90,9 +91,8 @@
   <div class="scheda-prodotto" id="schedaProdotto"></div>
 
   <script>
-    const csvUrlOriginale = "https://www.beps.it/media/feed/catalog_private_labels.csv";
+        const csvUrlOriginale = "https://www.beps.it/media/feed/catalog_private_labels.csv";
     const csvUrl = "https://corsproxy.io/?" + encodeURIComponent(csvUrlOriginale);
-
 
     function getQueryParams() {
       const params = new URLSearchParams(window.location.search);
@@ -138,7 +138,7 @@
         const righe = text.split('\n').filter(r => r && !r.startsWith("#"));
         const intestazione = righe.shift().split(',').map(h => h.trim());
         const prodotti = righe.map(riga => {
-          const valori = riga.split(/,(?=(?:[^"]*\"[^"]*\")*[^"]*$)/).map(v => v.replace(/^\"|\"$/g, '').trim());
+          const valori = riga.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/).map(v => v.replace(/^\"|\"$/g, '').trim());
           const p = Object.fromEntries(intestazione.map((key, i) => [key.trim(), valori[i] || ""]));
           return p;
         });
