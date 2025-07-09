@@ -97,7 +97,8 @@
         griglia.className = "griglia";
 
         items.forEach(p => {
-          const descr = p.description.length > 80 ? p.description.slice(0, 80) + "..." : p.description;
+          const descrizione = p.description ? (p.description.length > 80 ? p.description.slice(0, 80) + "..." : p.description) : "Nessuna descrizione disponibile";
+
           const card = document.createElement("div");
           card.className = "card";
           card.innerHTML = `
