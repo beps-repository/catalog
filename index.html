@@ -32,15 +32,15 @@
       background: #fff;
       border: 1px solid #ddd;
       padding: 15px;
-      border-radius: 8px;
+      border-radius: 0px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-      cursor: default; /* non più cliccabile */
+      cursor: default; /* non cliccabile */
     }
     .card img {
       flex: 0 0 360px;
       max-width: 360px;
       height: auto;
-      border-radius: 6px;
+      border-radius: 0px;
       object-fit: contain;
       margin-right: 30px;
     }
@@ -62,21 +62,6 @@
       color: #666;
       margin-top: 8px;
     }
-    /* Scheda prodotto rimossa dalla vista (non serve più)
-    .scheda-prodotto {
-      position: fixed;
-      top: 0;
-      right: 0;
-      width: 70%;
-      height: 100vh;
-      background: #fff;
-      box-shadow: -2px 0 5px rgba(0,0,0,0.2);
-      padding: 20px;
-      display: none;
-      z-index: 1000;
-      overflow-y: auto;
-    }
-    */
     @media (max-width: 768px) {
       .card {
         flex-direction: column;
@@ -92,32 +77,26 @@
 </head>
 <body>
   <div id="catalogo"></div>
-  <!-- Rimosso: <div class="scheda-prodotto" id="schedaProdotto"></div> -->
 
   <script>
     const fallbackUrl = "catalog/data.json"; // JSON generato dal workflow
 
+    // Normalizza parametri URL (case-insensitive, "-" diventa spazio)
+    function normalizeParam(value) {
+      if (!value) return null;
+      return value
+        .toLowerCase()
+        .replace(/-/g, " ")
+        .trim();
+    }
+
     function getQueryParams() {
       const params = new URLSearchParams(window.location.search);
       return {
-        marca: params.get("marca")?.toLowerCase() || null,
-        categoria: params.get("categoria")?.toLowerCase() || null
+        marca: normalizeParam(params.get("marca")),
+        categoria: normalizeParam(params.get("categoria"))
       };
     }
-
-    /* --- Funzioni disabilitate ---
-    function apriSchedaProdotto(p) {
-      ...
-    }
-
-    function chiudiSchedaProdotto() {
-      ...
-    }
-
-    function chiudiClickEsterno(event) {
-      ...
-    }
-    --- Fine funzioni disabilitate --- */
 
     async function caricaCatalogo() {
       try {
@@ -126,11 +105,14 @@
         const { marca, categoria } = getQueryParams();
 
         const prodottiFiltrati = prodotti.filter(p => {
-          const matchMarca = !marca || (p.marca && p.marca.toLowerCase() === marca);
-          const matchCategoria = !categoria || (
-            p.category &&
-            p.category.toLowerCase().split('>').some(c => c.trim().toLowerCase() === categoria)
-          );
+          const marcaProdotto = p.marca ? p.marca.toLowerCase().trim() : "";
+          const categorieProdotto = p.category
+            ? p.category.toLowerCase().split(">").map(c => c.trim())
+            : [];
+
+          const matchMarca = !marca || marcaProdotto === marca;
+          const matchCategoria = !categoria || categorieProdotto.includes(categoria);
+
           return matchMarca && matchCategoria;
         });
 
@@ -169,7 +151,7 @@
                 <p class="sku"><strong>SKU:</strong> ${p.sku}</p>
               </div>
             `;
-            // card.addEventListener("click", () => apriSchedaProdotto(p)); // disattivato
+            // Click disabilitato (niente scheda prodotto)
             griglia.appendChild(card);
           });
 
