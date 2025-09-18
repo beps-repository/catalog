@@ -13,8 +13,10 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Scarica CSV e converti in JSON
-        run: |
-          curl -L "https://www.beps.it/media/feed/catalog_private_labels.csv" -o catalog/catalog.csv
+
+  run: |
+    curl -L "https://api.allorigins.win/raw?url=https://www.beps.it/media/feed/catalog_private_labels.csv" -o catalog/catalog.csv
+
           pip install pandas
           python - <<EOF
           import pandas as pd
