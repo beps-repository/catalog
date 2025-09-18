@@ -145,18 +145,12 @@
       }
     }
 
-    async function caricaDati() {
-      try {
-        const response = await fetch(csvUrl);
-        if (!response.ok) throw new Error("Proxy non disponibile");
-        const text = await response.text();
-        return parseCSV(text);
-      } catch (e) {
-        console.warn("Uso fallback data.json", e);
-        const response = await fetch(fallbackUrl);
-        return await response.json();
-      }
-    }
+   async function caricaDati() {
+  // carica direttamente il JSON statico
+  const response = await fetch("catalog/data.json");
+  return await response.json();
+}
+
 
     function parseCSV(text) {
       const righe = text.split('\n').filter(r => r && !r.startsWith("#"));
