@@ -101,7 +101,8 @@
   <script>
     const csvUrlOriginale = "https://www.beps.it/media/feed/catalog_private_labels.csv";
     const csvUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(csvUrlOriginale);
-    const fallbackUrl = "data.json"; // file statico nella repo
+    const fallbackUrl = "catalog/catalog/data.json";
+
 
     function getQueryParams() {
       const params = new URLSearchParams(window.location.search);
