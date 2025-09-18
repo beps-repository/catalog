@@ -34,17 +34,16 @@
       padding: 15px;
       border-radius: 8px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-      cursor: pointer;
+      cursor: default; /* non più cliccabile */
     }
-.card img {
-  flex: 0 0 360px;   /* larghezza fissa 360px */
-  max-width: 360px;
-  height: auto;
-  border-radius: 6px;
-  object-fit: contain;
-  margin-right: 30px; /* nuovo margine tra immagine e testo */
-}
-
+    .card img {
+      flex: 0 0 360px;
+      max-width: 360px;
+      height: auto;
+      border-radius: 6px;
+      object-fit: contain;
+      margin-right: 30px;
+    }
     .card-content {
       flex: 1;
     }
@@ -63,6 +62,7 @@
       color: #666;
       margin-top: 8px;
     }
+    /* Scheda prodotto rimossa dalla vista (non serve più)
     .scheda-prodotto {
       position: fixed;
       top: 0;
@@ -76,39 +76,7 @@
       z-index: 1000;
       overflow-y: auto;
     }
-    .scheda-prodotto img {
-      width: 100%;
-      max-height: 35vh;
-      object-fit: contain;
-      margin-bottom: 10px;
-    }
-    .scheda-prodotto h3 {
-      margin-top: 0;
-    }
-    .scheda-prodotto .contenuto {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .btn-link {
-      display: inline-block;
-      margin-top: 10px;
-      padding: 10px 15px;
-      background: #333;
-      color: #fff;
-      text-decoration: none;
-      border-radius: 4px;
-      text-align: center;
-    }
-    .scheda-prodotto .chiudi {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: transparent;
-      border: none;
-      font-size: 1.5rem;
-      cursor: pointer;
-    }
+    */
     @media (max-width: 768px) {
       .card {
         flex-direction: column;
@@ -117,16 +85,14 @@
       }
       .card img {
         max-width: 100%;
-      }
-      .scheda-prodotto {
-        width: 100%;
+        margin-right: 0;
       }
     }
   </style>
 </head>
 <body>
   <div id="catalogo"></div>
-  <div class="scheda-prodotto" id="schedaProdotto"></div>
+  <!-- Rimosso: <div class="scheda-prodotto" id="schedaProdotto"></div> -->
 
   <script>
     const fallbackUrl = "catalog/data.json"; // JSON generato dal workflow
@@ -139,38 +105,19 @@
       };
     }
 
+    /* --- Funzioni disabilitate ---
     function apriSchedaProdotto(p) {
-      const scheda = document.getElementById("schedaProdotto");
-      scheda.innerHTML = `
-        <button class="chiudi" onclick="chiudiSchedaProdotto()">&times;</button>
-        <div class="contenuto">
-          <div>
-            <img src="${p.image_url}" alt="${p.title}">
-            <h3>${p.title}</h3>
-            <p><strong>${p.short_description}</strong></p>
-            <p>${p.description}</p>
-            <p><strong>SKU:</strong> ${p.sku}</p>
-          </div>
-          <a class="btn-link" href="${p.link_url}" target="_blank">Scopri la disponibilità</a>
-        </div>
-      `;
-      scheda.style.display = "flex";
-      document.addEventListener("click", chiudiClickEsterno);
+      ...
     }
 
     function chiudiSchedaProdotto() {
-      const scheda = document.getElementById("schedaProdotto");
-      scheda.style.display = "none";
-      scheda.innerHTML = "";
-      document.removeEventListener("click", chiudiClickEsterno);
+      ...
     }
 
     function chiudiClickEsterno(event) {
-      const scheda = document.getElementById("schedaProdotto");
-      if (!scheda.contains(event.target) && !event.target.closest(".card")) {
-        chiudiSchedaProdotto();
-      }
+      ...
     }
+    --- Fine funzioni disabilitate --- */
 
     async function caricaCatalogo() {
       try {
@@ -222,7 +169,7 @@
                 <p class="sku"><strong>SKU:</strong> ${p.sku}</p>
               </div>
             `;
-            card.addEventListener("click", () => apriSchedaProdotto(p));
+            // card.addEventListener("click", () => apriSchedaProdotto(p)); // disattivato
             griglia.appendChild(card);
           });
 
@@ -237,14 +184,13 @@
 
     caricaCatalogo();
 
+    // Auto-resize iframe
     function inviaAltezza() {
-  const h = document.body.scrollHeight;
-  parent.postMessage({ frameHeight: h }, "*");
-}
-
-window.addEventListener("load", inviaAltezza);
-window.addEventListener("resize", inviaAltezza);
-
+      const h = document.body.scrollHeight;
+      parent.postMessage({ frameHeight: h }, "*");
+    }
+    window.addEventListener("load", inviaAltezza);
+    window.addEventListener("resize", inviaAltezza);
   </script>
 </body>
 </html>
