@@ -1,0 +1,31 @@
+name: Update catalog data
+
+on:
+  schedule:
+    - cron: "0 3 * * *"   # ogni giorno alle 3 di notte
+  workflow_dispatch:       # permette anche avvio manuale
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Scarica CSV e converti in JSON
+        run: |
+          curl -L "https://www.beps.it/media/feed/catalog_private_labels.csv" -o catalog/catalog.csv
+          pip install pandas
+          python - <<EOF
+          import pandas as pd
+          df = pd.read_csv("catalog/catalog.csv")
+          df.to_json("catalog/data.json", orient="records", force_ascii=False)
+          EOF
+
+      - name: Commit e push aggiornamento
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add catalog/data.json
+          git commit -m "Aggiornamento catalogo automatico"
+          git push
