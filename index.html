@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catalogo</title>
+  <title>Catalogo Beps</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; background: #fafafa; }
     h2 { margin-top: 40px; border-bottom: 2px solid #ddd; padding-bottom: 5px; text-transform: capitalize; }
@@ -89,7 +89,7 @@
         grid-template-columns: repeat(2, 1fr);
       }
       .scheda-prodotto {
-        width: 80%;
+        width: 100%;
       }
     }
   </style>
@@ -100,7 +100,7 @@
 
   <script>
     const csvUrlOriginale = "https://www.beps.it/media/feed/catalog_private_labels.csv";
-    const csvUrl = "https://corsproxy.io/?" + encodeURIComponent(csvUrlOriginale);
+    const csvUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(csvUrlOriginale);
 
     function getQueryParams() {
       const params = new URLSearchParams(window.location.search);
@@ -150,7 +150,7 @@
         const righe = text.split('\n').filter(r => r && !r.startsWith("#"));
         const intestazione = righe.shift().split(',').map(h => h.trim());
         const prodotti = righe.map(riga => {
-          const valori = riga.split(/,(?=(?:[^"]*\"[^"]*\")*[^"]*$)/).map(v => v.replace(/^\"|\"$/g, '').trim());
+          const valori = riga.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/).map(v => v.replace(/^\"|\"$/g, '').trim());
           const p = Object.fromEntries(intestazione.map((key, i) => [key.trim(), valori[i] || ""]));
           return p;
         });
