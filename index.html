@@ -236,6 +236,15 @@
     }
 
     caricaCatalogo();
+
+    function inviaAltezza() {
+  const h = document.body.scrollHeight;
+  parent.postMessage({ frameHeight: h }, "*");
+}
+
+window.addEventListener("load", inviaAltezza);
+window.addEventListener("resize", inviaAltezza);
+
   </script>
 </body>
 </html>
