@@ -101,6 +101,7 @@
   <script>
     const csvUrlOriginale = "https://www.beps.it/media/feed/catalog_private_labels.csv";
     const csvUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(csvUrlOriginale);
+    const fallbackUrl = "data.json"; // file statico nella repo
 
     function getQueryParams() {
       const params = new URLSearchParams(window.location.search);
@@ -143,19 +144,33 @@
       }
     }
 
-    async function caricaCatalogo() {
+    async function caricaDati() {
       try {
         const response = await fetch(csvUrl);
+        if (!response.ok) throw new Error("Proxy non disponibile");
         const text = await response.text();
-        const righe = text.split('\n').filter(r => r && !r.startsWith("#"));
-        const intestazione = righe.shift().split(',').map(h => h.trim());
-        const prodotti = righe.map(riga => {
-          const valori = riga.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/).map(v => v.replace(/^\"|\"$/g, '').trim());
-          const p = Object.fromEntries(intestazione.map((key, i) => [key.trim(), valori[i] || ""]));
-          return p;
-        });
+        return parseCSV(text);
+      } catch (e) {
+        console.warn("Uso fallback data.json", e);
+        const response = await fetch(fallbackUrl);
+        return await response.json();
+      }
+    }
 
+    function parseCSV(text) {
+      const righe = text.split('\n').filter(r => r && !r.startsWith("#"));
+      const intestazione = righe.shift().split(',').map(h => h.trim());
+      return righe.map(riga => {
+        const valori = riga.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/).map(v => v.replace(/^\"|\"$/g, '').trim());
+        return Object.fromEntries(intestazione.map((key, i) => [key.trim(), valori[i] || ""]));
+      });
+    }
+
+    async function caricaCatalogo() {
+      try {
+        const prodotti = await caricaDati();
         const { marca, categoria } = getQueryParams();
+
         const prodottiFiltrati = prodotti.filter(p => {
           const matchMarca = !marca || (p.marca && p.marca.toLowerCase() === marca);
           const matchCategoria = !categoria || (
@@ -173,6 +188,8 @@
         });
 
         const container = document.getElementById("catalogo");
+        container.innerHTML = "";
+
         if (prodottiFiltrati.length === 0) {
           container.innerHTML = "<p>Nessun prodotto trovato.</p>";
           return;
