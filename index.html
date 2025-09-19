@@ -79,7 +79,8 @@
   <div id="catalogo"></div>
 
   <script>
-    const fallbackUrl = "catalog/data.json"; // JSON generato dal workflow
+    // URL della proxy Cloud Run (sostituisci con il tuo se cambia)
+    const proxyUrl = "https://proxy-catalog-826935378869.europe-west1.run.app";
 
     // Normalizza parametri URL (case-insensitive, "-" diventa spazio)
     function normalizeParam(value) {
@@ -100,7 +101,7 @@
 
     async function caricaCatalogo() {
       try {
-        const response = await fetch(fallbackUrl);
+        const response = await fetch(proxyUrl);
         const prodotti = await response.json();
         const { marca, categoria } = getQueryParams();
 
@@ -151,7 +152,6 @@
                 <p class="sku"><strong>SKU:</strong> ${p.sku}</p>
               </div>
             `;
-            // Click disabilitato (niente scheda prodotto)
             griglia.appendChild(card);
           });
 
