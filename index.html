@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catalogo Beps</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #fafafa;
+    }
+
+    h2 {
+      margin-top: 40px;
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 5px;
+      text-transform: capitalize;
+    }
+
+    .categoria {
+      margin-bottom: 60px;
+    }
+
+    .griglia {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card {
+      display: flex;
+      gap: 20px;
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 15px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      cursor: default;
+    }
+
+    .card img {
+      flex: 0 0 360px;
+      max-width: 360px;
+      height: auto;
+      object-fit: contain;
+    }
+
+    .card-content {
+      flex: 1;
+    }
+
+    .card-content h3 {
+      margin: 0 0 8px;
+      font-size: 1.2rem;
+      color: #222;
+    }
+
+    .card-content p {
+      margin: 0 0 6px;
+      font-size: 0.95rem;
+      color: #444;
+    }
+
+    .sku {
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 768px) {
+      .card {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .card img {
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="catalogo">Caricamento catalogo…</div>
+
+  <script>
+    /* ================= CONFIG ================= */
+
+    const PROXY_URL = "https://proxy-catalog-826935378869.europe-west1.run.app";
+
+    /* ================= UTIL ================= */
+
+    function normalizeParam(value) {
+      return value
+        ? value.toLowerCase().replace(/-/g, " ").trim()
+        : null;
+    }
+
+    function getQueryParams() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        marca: normalizeParam(params.get("marca")),
+        categoria: normalizeParam(params.get("categoria"))
+      };
+    }
+
+    /* ================= CATALOGO ================= */
+
+    async function caricaCatalogo() {
+      const container = document.getElementById("catalogo");
+
+      try {
+        const response = await fetch(PROXY_URL);
+        const prodotti = await response.json();
+        const { marca, categoria } = getQueryParams();
+
+        /* ---- filtro ottimizzato ---- */
+        const filtrati = [];
+        for (const p of prodotti) {
+          const marcaProdotto = p.marca?.toLowerCase().trim() || "";
+          if (marca && marcaProdotto !== marca) continue;
+
+          const categorieProdotto = p.category
+            ? p.category.toLowerCase().split(">").map(c => c.trim())
+            : [];
+
+          if (categoria && !categorieProdotto.includes(categoria)) continue;
+
+          filtrati.push(p);
+        }
+
+        if (!filtrati.length) {
+          container.innerHTML = "<p>Nessun prodotto trovato.</p>";
+          inviaAltezza();
+          return;
+        }
+
+        /* ---- raggruppamento per categoria ---- */
+        const gruppi = {};
+        for (const p of filtrati) {
+          const cat = p.category?.split(">").pop().trim() || "Senza categoria";
+          if (!gruppi[cat]) gruppi[cat] = [];
+          gruppi[cat].push(p);
+        }
+
+        container.innerHTML = "";
+
+        /* ---- rendering efficiente ---- */
+        const catalogFragment = document.createDocumentFragment();
+
+        for (const [cat, items] of Object.entries(gruppi)) {
+          const sezione = document.createElement("div");
+          sezione.className = "categoria";
+
+          const titolo = document.createElement("h2");
+          titolo.textContent = cat;
+          sezione.appendChild(titolo);
+
+          const griglia = document.createElement("div");
+          griglia.className = "griglia";
+
+          const cardsFragment = document.createDocumentFragment();
+
+          for (const p of items) {
+            const card = document.createElement("div");
+            card.className = "card";
+
+            card.innerHTML = `
+              <img 
+                src="${p.image_url}" 
+                alt="${p.title}" 
+                loading="lazy"
+              >
+              <div class="card-content">
+                <h3>${p.title}</h3>
+                <p>${p.short_description || ""}</p>
+                <p>${p.description || ""}</p>
+                <p class="sku"><strong>SKU:</strong> ${p.sku}</p>
+              </div>
+            `;
+
+            cardsFragment.appendChild(card);
+          }
+
+          griglia.appendChild(cardsFragment);
+          sezione.appendChild(griglia);
+          catalogFragment.appendChild(sezione);
+        }
+
+        container.appendChild(catalogFragment);
+        inviaAltezza();
+
+      } catch (err) {
+        console.error("Errore catalogo:", err);
+        container.innerHTML = "<p>Errore nel caricamento del catalogo.</p>";
+        inviaAltezza();
+      }
+    }
+
+    /* ================= IFRAME RESIZE ================= */
+
+    let resizeTimeout;
+    function inviaAltezza() {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        parent.postMessage(
+          { frameHeight: document.body.scrollHeight },
+          "*"
+        );
+      }, 100);
+    }
+
+    window.addEventListener("resize", inviaAltezza);
+
+    /* ================= START ================= */
+
+    caricaCatalogo();
+  </script>
+</body>
+</html>
