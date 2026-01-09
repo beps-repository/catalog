@@ -153,7 +153,7 @@ const PROXY_URL = "https://proxy-catalog-826935378869.europe-west1.run.app";
 /* ================= UTIL ================= */
 
 function normalizeParam(v) {
-  return v ? v.toLowerCase().replace(/-/g," ").trim() : null;
+  return v ? v.toLowerCase().replace(/-/g, " ").trim() : null;
 }
 
 function getQueryParams() {
@@ -164,32 +164,48 @@ function getQueryParams() {
   };
 }
 
-/* ===== COSTRUZIONE IMMAGINI (FIX QUI) ===== */
+/* ================= IMMAGINI ================= */
 
 function getProductImages(p) {
   const imgs = [];
 
-  if (p.image_url) {
-    imgs.push(p.image_url);
-  }
+  if (p.image_url) imgs.push(p.image_url);
 
   if (p.image_additional && p.image_path) {
     const base = "https://www.beps.it/items/";
-    const path = p.image_path.endsWith("/")
-      ? p.image_path
-      : p.image_path + "/";
+    const path = p.image_path.endsWith("/") ? p.image_path : p.image_path + "/";
 
     p.image_additional
       .split(",")
       .map(i => i.trim())
       .filter(Boolean)
-      .slice(0, 2) // max 3 totali (1 principale + 2 extra)
+      .slice(0, 2)
       .forEach(name => {
         imgs.push(`${base}${path}jpg/${name}_300x300.jpg`);
       });
   }
-
   return imgs;
+}
+
+/* ================= LAZY OBSERVER (GLOBALE) ================= */
+
+const imageObserver = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    const img = e.target;
+    img.src = img.dataset.src;
+    img.removeAttribute("data-src");
+    imageObserver.unobserve(img);
+  });
+}, {
+  rootMargin: "100px",
+  threshold: 0.01
+});
+
+function initLazyImages() {
+  document.querySelectorAll("img.lazy-img[data-src]").forEach(img => {
+    imageObserver.observe(img);
+  });
 }
 
 /* ================= CATALOGO ================= */
@@ -205,7 +221,7 @@ async function caricaCatalogo() {
     const filtrati = prodotti.filter(p => {
       if (marca && p.marca?.toLowerCase().trim() !== marca) return false;
       if (categoria) {
-        const cats = p.category?.toLowerCase().split(">").map(c=>c.trim()) || [];
+        const cats = p.category?.toLowerCase().split(">").map(c => c.trim()) || [];
         if (!cats.includes(categoria)) return false;
       }
       return true;
@@ -230,13 +246,15 @@ async function caricaCatalogo() {
       const sec = document.createElement("div");
       sec.className = "categoria";
       sec.innerHTML = `<h2>${cat}</h2>`;
+
       const grid = document.createElement("div");
       grid.className = "griglia";
 
       items.forEach(p => {
         const imgs = getProductImages(p);
         const dots = imgs.length > 1
-          ? `<div class="dots">${imgs.map((_,i)=>`<span class="dot ${i===0?"active":""}"></span>`).join("")}</div>`
+          ? `<div class="dots">${imgs.map((_, i) =>
+              `<span class="dot ${i === 0 ? "active" : ""}"></span>`).join("")}</div>`
           : "";
 
         const card = document.createElement("div");
@@ -244,10 +262,11 @@ async function caricaCatalogo() {
         card.innerHTML = `
           <div class="carousel" data-count="${imgs.length}">
             <img class="lazy-img carousel-img"
-                 data-src="${imgs[0]}"
-                 data-images="${imgs.join("|")}"
-                 data-index="0"
-                 alt="${p.title}">
+              loading="lazy"
+              data-src="${imgs[0]}"
+              data-images="${imgs.join("|")}"
+              data-index="0"
+              alt="${p.title}">
             ${imgs.length > 1 ? `
               <div class="arrow left">&#10094;</div>
               <div class="arrow right">&#10095;</div>` : ""}
@@ -270,42 +289,35 @@ async function caricaCatalogo() {
     initLazyImages();
     inviaAltezza();
 
-  } catch(e) {
+  } catch (e) {
     console.error(e);
     container.innerHTML = "<p>Errore caricamento catalogo</p>";
     inviaAltezza();
   }
 }
 
-/* ================= LAZY ================= */
-
-function initLazyImages() {
-  const obs = new IntersectionObserver(entries=>{
-    entries.forEach(x=>{
-      if(!x.isIntersecting) return;
-      x.target.src = x.target.dataset.src;
-      obs.unobserve(x.target);
-    });
-  },{rootMargin:"200px"});
-  document.querySelectorAll("img.lazy-img").forEach(i=>obs.observe(i));
-}
-
 /* ================= CAROUSEL ================= */
+
+function loadIfNeeded(img, src) {
+  if (img.src && img.src.includes(src)) return;
+  img.src = src;
+}
 
 function changeImage(img, dir) {
   const carousel = img.closest(".carousel");
   if (carousel.dataset.count === "1") return;
 
   const images = img.dataset.images.split("|");
-  let i = parseInt(img.dataset.index,10);
-  i = dir === "next" ? i+1 : i-1;
-  if (i<0) i = images.length-1;
-  if (i>=images.length) i = 0;
-  img.src = images[i];
+  let i = parseInt(img.dataset.index, 10);
+  i = dir === "next" ? i + 1 : i - 1;
+  if (i < 0) i = images.length - 1;
+  if (i >= images.length) i = 0;
+
+  loadIfNeeded(img, images[i]);
   img.dataset.index = i;
 
   carousel.querySelectorAll(".dot")
-    .forEach((d,idx)=>d.classList.toggle("active", idx===i));
+    .forEach((d, idx) => d.classList.toggle("active", idx === i));
 }
 
 document.addEventListener("click", e => {
@@ -315,21 +327,24 @@ document.addEventListener("click", e => {
   }
 });
 
-let startX=null;
-document.addEventListener("touchstart", e=>{
+let startX = null;
+document.addEventListener("touchstart", e => {
   const carousel = e.target.closest(".carousel");
   if (!carousel || carousel.dataset.count === "1") return;
   startX = e.touches[0].clientX;
 });
-document.addEventListener("touchend", e=>{
-  if(startX===null) return;
+
+document.addEventListener("touchend", e => {
+  if (startX === null) return;
   const carousel = e.target.closest(".carousel");
   if (!carousel || carousel.dataset.count === "1") return;
+
   const img = carousel.querySelector(".carousel-img");
   const diff = e.changedTouches[0].clientX - startX;
-  startX=null;
-  if(Math.abs(diff)<40) return;
-  changeImage(img, diff<0?"next":"prev");
+  startX = null;
+
+  if (Math.abs(diff) < 40) return;
+  changeImage(img, diff < 0 ? "next" : "prev");
 });
 
 /* ================= IFRAME ================= */
@@ -337,9 +352,9 @@ document.addEventListener("touchend", e=>{
 let resizeTimeout;
 function inviaAltezza() {
   clearTimeout(resizeTimeout);
-  resizeTimeout = setTimeout(()=>{
-    parent.postMessage({frameHeight:document.body.scrollHeight},"*");
-  },100);
+  resizeTimeout = setTimeout(() => {
+    parent.postMessage({ frameHeight: document.body.scrollHeight }, "*");
+  }, 100);
 }
 window.addEventListener("resize", inviaAltezza);
 
