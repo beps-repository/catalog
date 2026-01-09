@@ -332,4 +332,24 @@ function changeImage(img, dir) {
   const images = img.dataset.images.split("|");
   let i = parseInt(img.dataset.index,10);
   i = dir==="next" ? i+1 : i-1;
-  if (i<0) i = images
+  if (i<0) i = images.length-1;
+  if (i>=images.length) i = 0;
+  img.src = images[i];
+  img.dataset.index = i;
+
+  img.closest(".carousel").querySelectorAll(".dot")
+    .forEach((d,idx)=>d.classList.toggle("active", idx===i));
+}
+
+document.addEventListener("click", e => {
+  if (e.target.classList.contains("arrow")) {
+    const img = e.target.closest(".carousel").querySelector(".carousel-img");
+    if (img) {
+      changeImage(img, e.target.classList.contains("right")?"next":"prev");
+    }
+  }
+});
+</script>
+
+</body>
+</html>
