@@ -37,7 +37,7 @@ h2 {
   box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 
-/* ===== AREA IMMAGINE (STABILE) ===== */
+/* ===== AREA IMMAGINI ===== */
 
 .carousel {
   width: 360px;
@@ -55,7 +55,6 @@ h2 {
   background: #f0f0f0;
 }
 
-/* immagine inserita DOPO */
 .carousel-img {
   width: 340px;
   height: 340px;
@@ -85,6 +84,8 @@ h2 {
 .arrow.right { right: 8px; }
 
 .carousel:hover .arrow { opacity: 1; }
+
+.carousel[data-count="1"] .arrow { display:none; }
 
 /* ===== DOTS ===== */
 
@@ -173,15 +174,21 @@ const PLACEHOLDER_COUNT = 4;
 
 /* ================= UTIL ================= */
 
+function normalize(v) {
+  return v ? v.toLowerCase().replace(/-/g," ").trim() : null;
+}
+
 function formatCategoriaLabel(v) {
   if (!v) return "";
-  const s = v.replace(/-/g, " ").toLowerCase();
+  const s = v.replace(/-/g," ").toLowerCase();
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 /* ================= URL PARAMS ================= */
 
 const params = new URLSearchParams(location.search);
+const marcaFilter = normalize(params.get("marca"));
+const categoriaFilter = normalize(params.get("categoria"));
 const categoriaLabel = formatCategoriaLabel(params.get("categoria"));
 
 /* ================= INIT UI (IMMEDIATO) ================= */
@@ -199,7 +206,7 @@ container.appendChild(categoriaBlock);
 const grid = categoriaBlock.querySelector(".griglia");
 
 /* placeholder cards */
-for (let i = 0; i < PLACEHOLDER_COUNT; i++) {
+for (let i=0;i<PLACEHOLDER_COUNT;i++) {
   const card = document.createElement("div");
   card.className = "card placeholder";
   card.innerHTML = `
@@ -219,25 +226,51 @@ for (let i = 0; i < PLACEHOLDER_COUNT; i++) {
 
 function getProductImages(p) {
   const imgs = [];
+
   if (p.image_url) imgs.push(p.image_url);
 
   if (p.image_additional && p.image_path) {
     const base = "https://www.beps.it/items/";
     const path = p.image_path.replace(/^\/+|\/+$/g,"") + "/";
-    p.image_additional.split(",").map(i=>i.trim()).filter(Boolean).slice(0,2)
-      .forEach(n => imgs.push(`${base}${path}jpg/${n}_300x300.jpg`));
+    p.image_additional
+      .split(",")
+      .map(i=>i.trim())
+      .filter(Boolean)
+      .slice(0,2)
+      .forEach(n => {
+        imgs.push(`${base}${path}jpg/${n}_300x300.jpg`);
+      });
   }
   return imgs;
 }
 
-/* ================= FETCH DATI ================= */
+/* ================= FETCH + FILTER ================= */
 
 fetch(PROXY_URL)
-  .then(r => r.json())
+  .then(r=>r.json())
   .then(prodotti => {
+
+    const filtrati = prodotti.filter(p => {
+      if (marcaFilter && normalize(p.marca) !== marcaFilter) return false;
+
+      if (categoriaFilter) {
+        const cats = p.category
+          ?.toLowerCase()
+          .split(">")
+          .map(c=>c.trim()) || [];
+        if (!cats.includes(categoriaFilter)) return false;
+      }
+      return true;
+    });
+
     grid.innerHTML = "";
 
-    prodotti.forEach(p => {
+    if (!filtrati.length) {
+      grid.innerHTML = "<p>Nessun prodotto trovato.</p>";
+      return;
+    }
+
+    filtrati.forEach(p => {
       const imgs = getProductImages(p);
       const dots = imgs.length > 1
         ? `<div class="dots">${imgs.map((_,i)=>`<span class="dot ${i===0?"active":""}"></span>`).join("")}</div>`
@@ -258,6 +291,7 @@ fetch(PROXY_URL)
         <div class="card-content">
           <h3>${p.title || ""}</h3>
           <p>${p.short_description || ""}</p>
+          <p>${p.description || ""}</p>
           <p class="sku"><strong>SKU:</strong> ${p.sku || ""}</p>
         </div>`;
       grid.appendChild(card);
@@ -274,22 +308,21 @@ const imageObserver = new IntersectionObserver(entries => {
 
     const slot = e.target;
     const images = slot.dataset.images.split("|");
+
     const img = new Image();
     img.src = images[0];
     img.className = "carousel-img";
     img.dataset.images = slot.dataset.images;
     img.dataset.index = "0";
 
-    img.onload = () => {
-      slot.replaceWith(img);
-    };
-
+    img.onload = () => slot.replaceWith(img);
     imageObserver.unobserve(slot);
   });
-}, { rootMargin: "150px" });
+},{ rootMargin:"150px" });
 
 function initProgressiveImages() {
-  document.querySelectorAll(".img-slot[data-images]")
+  document
+    .querySelectorAll(".img-slot[data-images]")
     .forEach(slot => imageObserver.observe(slot));
 }
 
@@ -297,26 +330,6 @@ function initProgressiveImages() {
 
 function changeImage(img, dir) {
   const images = img.dataset.images.split("|");
-  let i = parseInt(img.dataset.index, 10);
-  i = dir === "next" ? i + 1 : i - 1;
-  if (i < 0) i = images.length - 1;
-  if (i >= images.length) i = 0;
-  img.src = images[i];
-  img.dataset.index = i;
-
-  img.closest(".carousel").querySelectorAll(".dot")
-    .forEach((d,idx)=>d.classList.toggle("active", idx === i));
-}
-
-document.addEventListener("click", e => {
-  if (e.target.classList.contains("arrow")) {
-    const img = e.target.closest(".carousel").querySelector(".carousel-img");
-    if (img) {
-      changeImage(img, e.target.classList.contains("right") ? "next" : "prev");
-    }
-  }
-});
-</script>
-
-</body>
-</html>
+  let i = parseInt(img.dataset.index,10);
+  i = dir==="next" ? i+1 : i-1;
+  if (i<0) i = images
