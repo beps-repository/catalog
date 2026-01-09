@@ -35,9 +35,15 @@
     padding: 15px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 
-    /* FIX performance: evita layout/paint delle card fuori viewport */
+    /* Performance: evita layout/paint delle card fuori viewport */
     content-visibility: auto;
     contain-intrinsic-size: 240px;
+  }
+
+  /* Performance: differisce paint del contenuto testuale fuori viewport */
+  .card-content {
+    content-visibility: auto;
+    contain-intrinsic-size: 180px;
   }
 
   /* ===== CAROUSEL ===== */
@@ -110,12 +116,15 @@
 
   /* ===== TESTO ===== */
 
-  .card-content { flex: 1; }
-
   .card-content h3 {
     margin: 0 0 8px;
     font-size: 1.2rem;
     color: #222;
+  }
+
+  .descrizione {
+    content-visibility: auto;
+    contain-intrinsic-size: 90px;
   }
 
   .card-content p {
@@ -216,7 +225,7 @@ function getQueryParams() {
   };
 }
 
-/* ===== COSTRUZIONE IMMAGINI (OBBLIGATORIA) ===== */
+/* ===== IMMAGINI (OBBLIGATORIO + FIX SLASH) ===== */
 
 function getProductImages(p) {
   const imgs = [];
@@ -224,10 +233,13 @@ function getProductImages(p) {
   if (p.image_url) imgs.push(p.image_url);
 
   if (p.image_additional && p.image_path) {
-    const base = "https://www.beps.it/items";
-    const path = (p.image_path || "").endsWith("/")
-      ? p.image_path
-      : (p.image_path || "") + "/";
+    const base = "https://www.beps.it/items/";
+
+    const path =
+      String(p.image_path || "")
+        .replace(/^\/+/, "")   // rimuove slash iniziali
+        .replace(/\/+$/, "")   // rimuove slash finali
+      + "/";
 
     p.image_additional
       .split(",")
@@ -242,11 +254,14 @@ function getProductImages(p) {
   return imgs;
 }
 
+function escapeAttr(s) {
+  return String(s ?? "").replace(/"/g, "&quot;");
+}
+
 /* ================= IFRAME RESIZE (progressivo) ================= */
 
 let resizeTimeout;
 function inviaAltezzaImmediata() {
-  // invio "best effort" immediato (utile per percezione + Google Sites)
   try {
     parent.postMessage({ frameHeight: document.body.scrollHeight }, "*");
   } catch (_) {}
@@ -267,12 +282,10 @@ const imageObserver = new IntersectionObserver(entries => {
     if (!e.isIntersecting) return;
     const img = e.target;
 
-    // carica SOLO quando serve
     img.src = img.dataset.src;
     img.removeAttribute("data-src");
     imageObserver.unobserve(img);
 
-    // resize dopo load (iframe height più accurata)
     img.addEventListener("load", inviaAltezza, { once: true });
     img.addEventListener("error", inviaAltezza, { once: true });
   });
@@ -289,11 +302,6 @@ function initLazyImages() {
 
 /* ================= RENDER HELPERS ================= */
 
-function escapeAttr(s) {
-  // evita rotture HTML in attributi (minimo indispensabile)
-  return String(s ?? "").replace(/"/g, "&quot;");
-}
-
 function renderCategoria(cat, items) {
   const sec = document.createElement("div");
   sec.className = "categoria";
@@ -306,14 +314,17 @@ function renderCategoria(cat, items) {
 
   items.forEach(p => {
     const imgs = getProductImages(p);
+
     const dots = imgs.length > 1
-      ? `<div class="dots">${imgs.map((_,i)=>`<span class="dot ${i===0?"active":""}"></span>`).join("")}</div>`
+      ? `<div class="dots">${imgs.map((_, i) =>
+          `<span class="dot ${i === 0 ? "active" : ""}"></span>`).join("")}</div>`
       : "";
+
+    const shortDesc = p.short_description ? `<p>${p.short_description}</p>` : "";
+    const desc = p.description ? `<p>${p.description}</p>` : "";
 
     const card = document.createElement("div");
     card.className = "card";
-
-    // NOTA: src NON impostato -> carica solo via observer o interazione
     card.innerHTML = `
       <div class="carousel" data-count="${imgs.length}">
         <img class="lazy-img carousel-img"
@@ -327,10 +338,13 @@ function renderCategoria(cat, items) {
           <div class="arrow right">&#10095;</div>` : ""}
         ${dots}
       </div>
+
       <div class="card-content">
         <h3>${p.title || ""}</h3>
-        <p>${p.short_description || ""}</p>
-        <p>${p.description || ""}</p>
+        <div class="descrizione">
+          ${shortDesc}
+          ${desc}
+        </div>
         <p class="sku"><strong>SKU:</strong> ${p.sku || ""}</p>
       </div>
     `;
@@ -358,6 +372,7 @@ async function caricaCatalogo() {
 
     const filtrati = prodotti.filter(p => {
       if (marca && p.marca?.toLowerCase().trim() !== marca) return false;
+
       if (categoria) {
         const cats = p.category?.toLowerCase().split(">").map(c => c.trim()) || [];
         if (!cats.includes(categoria)) return false;
@@ -378,26 +393,23 @@ async function caricaCatalogo() {
       (gruppi[c] ||= []).push(p);
     });
 
-    // svuota skeleton e prepara output
+    // svuota skeleton
     container.innerHTML = "";
 
-    // render incrementale per non bloccare main thread
+    // render incrementale per categoria (non blocca il thread)
     const entries = Object.entries(gruppi);
 
     for (let idx = 0; idx < entries.length; idx++) {
       const [cat, items] = entries[idx];
 
-      const sec = renderCategoria(cat, items);
-      container.appendChild(sec);
-
-      // resize progressivo
+      container.appendChild(renderCategoria(cat, items));
       inviaAltezzaImmediata();
 
       // lascia respirare il browser (paint tra una categoria e l’altra)
       await new Promise(r => requestAnimationFrame(r));
     }
 
-    // init lazy dopo il primo paint (priorità al render)
+    // init lazy dopo primo paint
     setTimeout(() => {
       initLazyImages();
       inviaAltezza();
@@ -415,14 +427,13 @@ async function caricaCatalogo() {
 function loadIfNeeded(img, src) {
   if (!src) return;
 
-  // se non è stata ancora caricata la prima (lazy), caricala ora
+  // se la prima immagine non è stata ancora caricata (lazy), caricala ora
   if (img.dataset.src) {
     img.src = img.dataset.src;
     img.removeAttribute("data-src");
     imageObserver.unobserve(img);
   }
 
-  // poi cambia slide (senza preload di massa)
   if (!img.src || !img.src.includes(src)) {
     img.src = src;
   }
