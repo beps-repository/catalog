@@ -36,14 +36,23 @@
       border: 1px solid #ddd;
       padding: 15px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-      cursor: default;
     }
 
     .card img {
       flex: 0 0 360px;
       max-width: 360px;
-      height: auto;
+      min-height: 200px;
+      background: #f0f0f0;
       object-fit: contain;
+    }
+
+    .lazy-img {
+      filter: blur(10px);
+      transition: filter 0.3s ease;
+    }
+
+    .lazy-img[src] {
+      filter: blur(0);
     }
 
     .card-content {
@@ -167,10 +176,10 @@
             card.className = "card";
 
             card.innerHTML = `
-              <img 
-                src="${p.image_url}" 
-                alt="${p.title}" 
-                loading="lazy"
+              <img
+                data-src="${p.image_url}"
+                alt="${p.title}"
+                class="lazy-img"
               >
               <div class="card-content">
                 <h3>${p.title}</h3>
@@ -189,6 +198,8 @@
         }
 
         container.appendChild(catalogFragment);
+
+        initLazyImages();
         inviaAltezza();
 
       } catch (err) {
@@ -196,6 +207,30 @@
         container.innerHTML = "<p>Errore nel caricamento del catalogo.</p>";
         inviaAltezza();
       }
+    }
+
+    /* ================= LAZY IMAGES ================= */
+
+    function initLazyImages() {
+      const images = document.querySelectorAll("img.lazy-img");
+
+      const observer = new IntersectionObserver(
+        entries => {
+          entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+
+            const img = entry.target;
+            img.src = img.dataset.src;
+            img.removeAttribute("data-src");
+            observer.unobserve(img);
+          });
+        },
+        {
+          rootMargin: "200px 0px"
+        }
+      );
+
+      images.forEach(img => observer.observe(img));
     }
 
     /* ================= IFRAME RESIZE ================= */
