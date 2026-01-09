@@ -1,378 +1,339 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catalogo Beps</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catalogo Beps</title>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background: #fafafa;
-    }
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background: #fafafa;
+}
 
-    h2 {
-      margin-top: 40px;
-      border-bottom: 2px solid #ddd;
-      padding-bottom: 5px;
-      text-transform: capitalize;
-    }
+h2 {
+  margin-top: 40px;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 5px;
+  text-transform: capitalize;
+}
 
-    .categoria {
-      margin-bottom: 60px;
-    }
+.categoria { margin-bottom: 60px; }
 
-    .griglia {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
+.griglia {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
 
-    .card {
-      display: flex;
-      gap: 20px;
-      background: #fff;
-      border: 1px solid #ddd;
-      padding: 15px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-    }
+.card {
+  display: flex;
+  gap: 20px;
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 15px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
 
-    /* ===== CAROUSEL ===== */
+/* ===== CAROUSEL ===== */
 
-    .carousel {
-      width: 360px;
-      user-select: none;
-      touch-action: pan-y;
-    }
+.carousel {
+  width: 360px;
+  position: relative;
+  user-select: none;
+  touch-action: pan-y;
+}
 
-    .carousel-img {
-      width: 100%;
-      min-height: 200px;
-      background: #f0f0f0;
-      object-fit: contain;
-      display: block;
-    }
+.carousel[data-count="1"] .arrow {
+  display: none !important;
+}
 
-    .lazy-img {
-      filter: blur(10px);
-      transition: filter 0.3s ease;
-    }
+.carousel-img {
+  width: 100%;
+  min-height: 220px;
+  background: #f0f0f0;
+  object-fit: contain;
+  display: block;
+}
 
-    .lazy-img[src] {
-      filter: blur(0);
-    }
+.lazy-img {
+  filter: blur(10px);
+  transition: filter 0.3s ease;
+}
+.lazy-img[src] { filter: blur(0); }
 
-    .dots {
-      display: flex;
-      justify-content: center;
-      gap: 6px;
-      margin-top: 8px;
-    }
+/* ===== FRECCE ===== */
 
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #ccc;
-      cursor: pointer;
-    }
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.45);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
 
-    .dot.active {
-      background: #00a6c7;
-    }
+.arrow.left { left: 8px; }
+.arrow.right { right: 8px; }
 
-    /* ===== TESTO ===== */
+.carousel:hover .arrow,
+.carousel.show-arrows .arrow {
+  opacity: 1;
+}
 
-    .card-content {
-      flex: 1;
-    }
+/* ===== DOTS ===== */
 
-    .card-content h3 {
-      margin: 0 0 8px;
-      font-size: 1.2rem;
-      color: #222;
-    }
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+}
 
-    .card-content p {
-      margin: 0 0 6px;
-      font-size: 0.95rem;
-      color: #444;
-    }
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ccc;
+}
 
-    .sku {
-      font-size: 0.85rem;
-      color: #666;
-      margin-top: 8px;
-    }
+.dot.active { background: #00a6c7; }
 
-    @media (max-width: 768px) {
-      .card {
-        flex-direction: column;
-        text-align: center;
-      }
+/* ===== TESTO ===== */
 
-      .carousel {
-        width: 100%;
-      }
-    }
-  </style>
+.card-content { flex: 1; }
+
+.card-content h3 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+  color: #222;
+}
+
+.card-content p {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+  color: #444;
+}
+
+.sku {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 8px;
+}
+
+/* ===== MOBILE ===== */
+
+@media (max-width: 768px) {
+  .card {
+    flex-direction: column;
+    text-align: center;
+  }
+  .carousel { width: 100%; }
+}
+</style>
 </head>
 
 <body>
-  <div id="catalogo">Caricamento catalogo…</div>
+<div id="catalogo">Caricamento catalogo…</div>
 
-  <script>
-    /* ================= CONFIG ================= */
+<script>
+/* ================= CONFIG ================= */
 
-    const PROXY_URL = "https://proxy-catalog-826935378869.europe-west1.run.app";
+const PROXY_URL = "https://proxy-catalog-826935378869.europe-west1.run.app";
 
-    /* ================= UTIL ================= */
+/* ================= UTIL ================= */
 
-    function normalizeParam(value) {
-      return value
-        ? value.toLowerCase().replace(/-/g, " ").trim()
-        : null;
-    }
+function normalizeParam(v) {
+  return v ? v.toLowerCase().replace(/-/g," ").trim() : null;
+}
 
-    function getQueryParams() {
-      const params = new URLSearchParams(window.location.search);
-      return {
-        marca: normalizeParam(params.get("marca")),
-        categoria: normalizeParam(params.get("categoria"))
-      };
-    }
+function getQueryParams() {
+  const p = new URLSearchParams(location.search);
+  return {
+    marca: normalizeParam(p.get("marca")),
+    categoria: normalizeParam(p.get("categoria"))
+  };
+}
 
-    function getProductImages(p) {
-      const images = [];
+function getProductImages(p) {
+  const imgs = [];
+  if (p.image_url) imgs.push(p.image_url);
 
-      if (p.image_url) images.push(p.image_url);
+  if (p.image_additional && p.image_path) {
+    const base = "https://www.beps.it/items/";
+    p.image_additional
+      .split(",")
+      .map(i => i.trim())
+      .filter(Boolean)
+      .slice(0, 2) // max 3 totali
+      .forEach(n => imgs.push(`${base}${p.image_path}${n}_300x300.jpg`));
+  }
+  return imgs;
+}
 
-      if (p.image_additional && p.image_path) {
-        const baseUrl = "https://www.beps.it/items/";
-        p.image_additional
-          .split(",")
-          .map(i => i.trim())
-          .filter(Boolean)
-          .slice(0, 2) // max 3 totali
-          .forEach(name => {
-            images.push(
-              `${baseUrl}${p.image_path}${name}_300x300.jpg`
-            );
-          });
+/* ================= CATALOGO ================= */
+
+async function caricaCatalogo() {
+  const container = document.getElementById("catalogo");
+
+  try {
+    const res = await fetch(PROXY_URL);
+    const prodotti = await res.json();
+    const { marca, categoria } = getQueryParams();
+
+    const filtrati = prodotti.filter(p => {
+      if (marca && p.marca?.toLowerCase().trim() !== marca) return false;
+      if (categoria) {
+        const cats = p.category?.toLowerCase().split(">").map(c=>c.trim()) || [];
+        if (!cats.includes(categoria)) return false;
       }
+      return true;
+    });
 
-      return images;
+    if (!filtrati.length) {
+      container.innerHTML = "<p>Nessun prodotto trovato.</p>";
+      inviaAltezza();
+      return;
     }
 
-    /* ================= CATALOGO ================= */
+    const gruppi = {};
+    filtrati.forEach(p => {
+      const c = p.category?.split(">").pop().trim() || "Senza categoria";
+      (gruppi[c] ||= []).push(p);
+    });
 
-    async function caricaCatalogo() {
-      const container = document.getElementById("catalogo");
+    container.innerHTML = "";
+    const frag = document.createDocumentFragment();
 
-      try {
-        const response = await fetch(PROXY_URL);
-        const prodotti = await response.json();
-        const { marca, categoria } = getQueryParams();
+    for (const [cat, items] of Object.entries(gruppi)) {
+      const sec = document.createElement("div");
+      sec.className = "categoria";
+      sec.innerHTML = `<h2>${cat}</h2>`;
+      const grid = document.createElement("div");
+      grid.className = "griglia";
 
-        const filtrati = [];
-        for (const p of prodotti) {
-          const marcaProdotto = p.marca?.toLowerCase().trim() || "";
-          if (marca && marcaProdotto !== marca) continue;
+      items.forEach(p => {
+        const imgs = getProductImages(p);
+        const dots = imgs.length > 1
+          ? `<div class="dots">${imgs.map((_,i)=>`<span class="dot ${i===0?"active":""}"></span>`).join("")}</div>`
+          : "";
 
-          const categorieProdotto = p.category
-            ? p.category.toLowerCase().split(">").map(c => c.trim())
-            : [];
-
-          if (categoria && !categorieProdotto.includes(categoria)) continue;
-
-          filtrati.push(p);
-        }
-
-        if (!filtrati.length) {
-          container.innerHTML = "<p>Nessun prodotto trovato.</p>";
-          inviaAltezza();
-          return;
-        }
-
-        const gruppi = {};
-        for (const p of filtrati) {
-          const cat = p.category?.split(">").pop().trim() || "Senza categoria";
-          if (!gruppi[cat]) gruppi[cat] = [];
-          gruppi[cat].push(p);
-        }
-
-        container.innerHTML = "";
-        const fragment = document.createDocumentFragment();
-
-        for (const [cat, items] of Object.entries(gruppi)) {
-          const sezione = document.createElement("div");
-          sezione.className = "categoria";
-
-          const titolo = document.createElement("h2");
-          titolo.textContent = cat;
-          sezione.appendChild(titolo);
-
-          const griglia = document.createElement("div");
-          griglia.className = "griglia";
-
-          for (const p of items) {
-            const images = getProductImages(p);
-
-            const dotsHTML = images.length > 1
-              ? `<div class="dots">
-                  ${images.map((_, i) =>
-                    `<span class="dot ${i === 0 ? "active" : ""}"></span>`
-                  ).join("")}
-                </div>`
-              : "";
-
-            const card = document.createElement("div");
-            card.className = "card";
-
-            card.innerHTML = `
-              <div class="carousel" data-images='${JSON.stringify(images)}' data-index="0">
-                <img
-                  class="lazy-img carousel-img"
-                  data-src="${images[0]}"
-                  alt="${p.title}"
-                >
-                ${dotsHTML}
-              </div>
-
-              <div class="card-content">
-                <h3>${p.title}</h3>
-                <p>${p.short_description || ""}</p>
-                <p>${p.description || ""}</p>
-                <p class="sku"><strong>SKU:</strong> ${p.sku}</p>
-              </div>
-            `;
-
-            griglia.appendChild(card);
-          }
-
-          sezione.appendChild(griglia);
-          fragment.appendChild(sezione);
-        }
-
-        container.appendChild(fragment);
-
-        initLazyImages();
-        initDotNavigation();
-        initSwipeNavigation();
-        inviaAltezza();
-
-      } catch (err) {
-        console.error(err);
-        container.innerHTML = "<p>Errore nel caricamento del catalogo.</p>";
-        inviaAltezza();
-      }
-    }
-
-    /* ================= LAZY IMAGES ================= */
-
-    function initLazyImages() {
-      const images = document.querySelectorAll("img.lazy-img");
-
-      const observer = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-          if (!entry.isIntersecting) return;
-          const img = entry.target;
-          img.src = img.dataset.src;
-          observer.unobserve(img);
-        });
-      }, { rootMargin: "200px 0px" });
-
-      images.forEach(img => observer.observe(img));
-    }
-
-    /* ================= CAROUSEL ================= */
-
-    function updateCarousel(carousel, index) {
-      const images = JSON.parse(carousel.dataset.images);
-      const img = carousel.querySelector(".carousel-img");
-      const dots = carousel.querySelectorAll(".dot");
-
-      if (index < 0) index = images.length - 1;
-      if (index >= images.length) index = 0;
-
-      img.src = images[index];
-      carousel.dataset.index = index;
-
-      dots.forEach((d, i) =>
-        d.classList.toggle("active", i === index)
-      );
-    }
-
-    function initDotNavigation() {
-      document.querySelectorAll(".carousel").forEach(carousel => {
-        const dots = carousel.querySelectorAll(".dot");
-        dots.forEach((dot, index) => {
-          dot.addEventListener("click", () =>
-            updateCarousel(carousel, index)
-          );
-        });
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="carousel" data-count="${imgs.length}">
+            <img class="lazy-img carousel-img"
+                 data-src="${imgs[0]}"
+                 data-images="${imgs.join("|")}"
+                 data-index="0"
+                 alt="${p.title}">
+            ${imgs.length > 1 ? `
+              <div class="arrow left">&#10094;</div>
+              <div class="arrow right">&#10095;</div>` : ""}
+            ${dots}
+          </div>
+          <div class="card-content">
+            <h3>${p.title}</h3>
+            <p>${p.short_description || ""}</p>
+            <p>${p.description || ""}</p>
+            <p class="sku"><strong>SKU:</strong> ${p.sku}</p>
+          </div>`;
+        grid.appendChild(card);
       });
+
+      sec.appendChild(grid);
+      frag.appendChild(sec);
     }
 
-    function initSwipeNavigation() {
-      document.querySelectorAll(".carousel").forEach(carousel => {
-        let startX = 0;
-        let dragging = false;
+    container.appendChild(frag);
+    initLazyImages();
+    inviaAltezza();
 
-        const start = x => {
-          startX = x;
-          dragging = true;
-        };
+  } catch(e) {
+    console.error(e);
+    container.innerHTML = "<p>Errore caricamento catalogo</p>";
+    inviaAltezza();
+  }
+}
 
-        const end = x => {
-          if (!dragging) return;
-          const diff = x - startX;
-          dragging = false;
+/* ================= LAZY ================= */
 
-          if (Math.abs(diff) < 40) return;
+function initLazyImages() {
+  const obs = new IntersectionObserver(entries=>{
+    entries.forEach(x=>{
+      if(!x.isIntersecting) return;
+      x.target.src = x.target.dataset.src;
+      obs.unobserve(x.target);
+    });
+  },{rootMargin:"200px"});
+  document.querySelectorAll("img.lazy-img").forEach(i=>obs.observe(i));
+}
 
-          const index = parseInt(carousel.dataset.index, 10);
-          updateCarousel(carousel, diff < 0 ? index + 1 : index - 1);
-        };
+/* ================= CAROUSEL ================= */
 
-        carousel.addEventListener("touchstart", e =>
-          start(e.touches[0].clientX)
-        );
-        carousel.addEventListener("touchend", e =>
-          end(e.changedTouches[0].clientX)
-        );
+function changeImage(img, dir) {
+  const carousel = img.closest(".carousel");
+  if (carousel.dataset.count === "1") return;
 
-        carousel.addEventListener("mousedown", e =>
-          start(e.clientX)
-        );
-        carousel.addEventListener("mouseup", e =>
-          end(e.clientX)
-        );
-        carousel.addEventListener("mouseleave", () =>
-          dragging = false
-        );
-      });
-    }
+  const images = img.dataset.images.split("|");
+  let i = parseInt(img.dataset.index,10);
+  i = dir === "next" ? i+1 : i-1;
+  if (i<0) i = images.length-1;
+  if (i>=images.length) i = 0;
+  img.src = images[i];
+  img.dataset.index = i;
 
-    /* ================= IFRAME ================= */
+  const dots = carousel.querySelectorAll(".dot");
+  dots.forEach((d,idx)=>d.classList.toggle("active", idx===i));
+}
 
-    let resizeTimeout;
-    function inviaAltezza() {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => {
-        parent.postMessage(
-          { frameHeight: document.body.scrollHeight },
-          "*"
-        );
-      }, 100);
-    }
+document.addEventListener("click", e => {
+  if (e.target.classList.contains("arrow")) {
+    const img = e.target.closest(".carousel").querySelector(".carousel-img");
+    changeImage(img, e.target.classList.contains("right") ? "next" : "prev");
+  }
+});
 
-    window.addEventListener("resize", inviaAltezza);
+let startX=null;
+document.addEventListener("touchstart", e=>{
+  const carousel = e.target.closest(".carousel");
+  if (!carousel || carousel.dataset.count === "1") return;
+  startX = e.touches[0].clientX;
+});
+document.addEventListener("touchend", e=>{
+  if(startX===null) return;
+  const carousel = e.target.closest(".carousel");
+  if (!carousel || carousel.dataset.count === "1") return;
+  const img = carousel.querySelector(".carousel-img");
+  const diff = e.changedTouches[0].clientX - startX;
+  startX=null;
+  if(Math.abs(diff)<40) return;
+  changeImage(img, diff<0?"next":"prev");
+});
 
-    /* ================= START ================= */
+/* ================= IFRAME ================= */
 
-    caricaCatalogo();
-  </script>
+let resizeTimeout;
+function inviaAltezza() {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(()=>{
+    parent.postMessage({frameHeight:document.body.scrollHeight},"*");
+  },100);
+}
+window.addEventListener("resize", inviaAltezza);
+
+/* ================= START ================= */
+
+caricaCatalogo();
+</script>
 </body>
 </html>
