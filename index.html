@@ -36,77 +36,52 @@ h2 {
   box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 
-/* ===== CAROUSEL ===== */
+/* ===== AREA IMMAGINE ===== */
 
 .carousel {
   width: 360px;
-  min-height: 220px;
-  position: relative;
-  user-select: none;
-  touch-action: pan-y;
-}
-
-.carousel[data-count="1"] .arrow {
-  display: none !important;
+  height: 360px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .carousel-img {
-  width: 100%;
-  height: 220px;
-  background: #f0f0f0;
+  width: 340px;
+  height: 340px;
   object-fit: contain;
   display: block;
 }
 
-.lazy-img {
-  filter: blur(10px);
-  transition: filter 0.3s ease;
-}
-.lazy-img[src] { filter: blur(0); }
+/* ===== PLACEHOLDER ===== */
 
-/* ===== FRECCE ===== */
-
-.arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.45);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s ease;
+.placeholder .carousel-img,
+.placeholder .text-line {
+  background: linear-gradient(
+    90deg,
+    #eee 25%,
+    #f5f5f5 37%,
+    #eee 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.2s infinite;
 }
 
-.arrow.left { left: 8px; }
-.arrow.right { right: 8px; }
-
-.carousel:hover .arrow {
-  opacity: 1;
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
 }
 
-/* ===== DOTS ===== */
-
-.dots {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 8px;
+.text-line {
+  height: 14px;
+  margin-bottom: 8px;
+  border-radius: 4px;
 }
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #ccc;
-}
-
-.dot.active { background: #00a6c7; }
+.text-line.title { height: 18px; width: 70%; }
+.text-line.short { width: 90%; }
+.text-line.long { width: 95%; }
+.text-line.sku { width: 40%; }
 
 /* ===== TESTO ===== */
 
@@ -115,23 +90,15 @@ h2 {
 .card-content h3 {
   margin: 0 0 8px;
   font-size: 1.2rem;
-  color: #222;
 }
 
 .descrizione {
   display: none; /* attivata dopo primo paint */
 }
 
-.card-content p {
-  margin: 0 0 6px;
-  font-size: 0.95rem;
-  color: #444;
-}
-
 .sku {
   font-size: 0.85rem;
   color: #666;
-  margin-top: 8px;
 }
 
 /* ===== MOBILE ===== */
@@ -143,34 +110,78 @@ h2 {
   }
   .carousel {
     width: 100%;
+    height: auto;
+  }
+  .carousel-img {
+    width: 100%;
+    max-width: 340px;
+    height: auto;
   }
 }
 </style>
 </head>
 
 <body>
-<div id="catalogo">Caricamento catalogo…</div>
+
+<div id="catalogo"></div>
 
 <script>
 /* ================= CONFIG ================= */
 
 const PROXY_URL = "https://proxy-catalog-826935378869.europe-west1.run.app";
+const PLACEHOLDER_COUNT = 4;
 
 /* ================= UTIL ================= */
 
 function normalizeParam(v) {
-  return v ? v.toLowerCase().replace(/-/g," ").trim() : null;
+  return v ? v.toLowerCase().trim() : null;
 }
 
-function getQueryParams() {
-  const p = new URLSearchParams(location.search);
-  return {
-    marca: normalizeParam(p.get("marca")),
-    categoria: normalizeParam(p.get("categoria"))
-  };
+function formatCategoriaLabel(value) {
+  if (!value) return "";
+  const s = value.replace(/-/g, " ").toLowerCase();
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/* ===== IMMAGINI (URL CORRETTI) ===== */
+/* ================= URL PARAMS ================= */
+
+const params = new URLSearchParams(location.search);
+const categoriaRaw = params.get("categoria");
+const categoriaLabel = formatCategoriaLabel(categoriaRaw);
+const categoriaNorm = normalizeParam(categoriaLabel);
+
+/* ================= INIT PLACEHOLDER ================= */
+
+const container = document.getElementById("catalogo");
+
+const categoriaBlock = document.createElement("div");
+categoriaBlock.className = "categoria";
+categoriaBlock.innerHTML = `
+  <h2>${categoriaLabel || "Prodotti"}</h2>
+  <div class="griglia"></div>
+`;
+container.appendChild(categoriaBlock);
+
+const grid = categoriaBlock.querySelector(".griglia");
+
+for (let i = 0; i < PLACEHOLDER_COUNT; i++) {
+  const card = document.createElement("div");
+  card.className = "card placeholder";
+  card.innerHTML = `
+    <div class="carousel">
+      <div class="carousel-img"></div>
+    </div>
+    <div class="card-content">
+      <div class="text-line title"></div>
+      <div class="text-line short"></div>
+      <div class="text-line long"></div>
+      <div class="text-line sku"></div>
+    </div>
+  `;
+  grid.appendChild(card);
+}
+
+/* ================= IMMAGINI (COSTRUZIONE OBBLIGATORIA) ================= */
 
 function getProductImages(p) {
   const imgs = [];
@@ -179,9 +190,7 @@ function getProductImages(p) {
 
   if (p.image_additional && p.image_path) {
     const base = "https://www.beps.it/items/";
-    const path = p.image_path
-      .replace(/^\/+/, "")
-      .replace(/\/+$/, "") + "/";
+    const path = p.image_path.replace(/^\/+|\/+$/g, "") + "/";
 
     p.image_additional
       .split(",")
@@ -192,23 +201,56 @@ function getProductImages(p) {
         imgs.push(`${base}${path}jpg/${name}_300x300.jpg`);
       });
   }
-
   return imgs;
 }
 
-/* ================= IFRAME RESIZE ================= */
+/* ================= FETCH + RENDER ================= */
 
-let resizeTimeout;
-function inviaAltezza() {
-  clearTimeout(resizeTimeout);
-  resizeTimeout = setTimeout(() => {
-    parent.postMessage(
-      { frameHeight: document.body.scrollHeight },
-      "*"
-    );
-  }, 80);
-}
-window.addEventListener("resize", inviaAltezza);
+fetch(PROXY_URL)
+  .then(r => r.json())
+  .then(prodotti => {
+    const filtrati = prodotti.filter(p => {
+      if (categoriaNorm) {
+        const cats = p.category?.toLowerCase().split(">").map(c => c.trim()) || [];
+        return cats.includes(categoriaNorm);
+      }
+      return true;
+    });
+
+    grid.innerHTML = "";
+
+    filtrati.forEach(p => {
+      const imgs = getProductImages(p);
+
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="carousel">
+          <img class="carousel-img"
+               data-src="${imgs[0] || ""}"
+               alt="${p.title || ""}">
+        </div>
+        <div class="card-content">
+          <h3>${p.title || ""}</h3>
+          <div class="descrizione">
+            ${p.short_description || ""}
+            ${p.description || ""}
+          </div>
+          <p class="sku"><strong>SKU:</strong> ${p.sku || ""}</p>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+
+    initLazyImages();
+
+    /* mostra descrizioni dopo primo paint */
+    requestAnimationFrame(() => {
+      document.querySelectorAll(".descrizione").forEach(d => {
+        d.style.display = "block";
+      });
+    });
+  });
 
 /* ================= LAZY IMMAGINI ================= */
 
@@ -219,154 +261,15 @@ const imageObserver = new IntersectionObserver(entries => {
     img.src = img.dataset.src;
     img.removeAttribute("data-src");
     imageObserver.unobserve(img);
-    img.onload = inviaAltezza;
   });
 }, { rootMargin: "100px" });
 
 function initLazyImages() {
   document
-    .querySelectorAll("img.lazy-img[data-src]")
+    .querySelectorAll("img.carousel-img[data-src]")
     .forEach(img => imageObserver.observe(img));
 }
-
-/* ================= CATALOGO ================= */
-
-async function caricaCatalogo() {
-  const container = document.getElementById("catalogo");
-
-  try {
-    const res = await fetch(PROXY_URL);
-    const prodotti = await res.json();
-    const { marca, categoria } = getQueryParams();
-
-    const filtrati = prodotti.filter(p => {
-      if (marca && p.marca?.toLowerCase().trim() !== marca) return false;
-      if (categoria) {
-        const cats = p.category?.toLowerCase().split(">").map(c=>c.trim()) || [];
-        if (!cats.includes(categoria)) return false;
-      }
-      return true;
-    });
-
-    if (!filtrati.length) {
-      container.innerHTML = "<p>Nessun prodotto trovato.</p>";
-      inviaAltezza();
-      return;
-    }
-
-    const gruppi = {};
-    filtrati.forEach(p => {
-      const c = p.category?.split(">").pop().trim() || "Senza categoria";
-      (gruppi[c] ||= []).push(p);
-    });
-
-    container.innerHTML = "";
-    const frag = document.createDocumentFragment();
-
-    for (const [cat, items] of Object.entries(gruppi)) {
-      const sec = document.createElement("div");
-      sec.className = "categoria";
-      sec.innerHTML = `<h2>${cat}</h2>`;
-
-      const grid = document.createElement("div");
-      grid.className = "griglia";
-
-      items.forEach(p => {
-        const imgs = getProductImages(p);
-        const dots = imgs.length > 1
-          ? `<div class="dots">${imgs.map((_,i)=>`<span class="dot ${i===0?"active":""}"></span>`).join("")}</div>`
-          : "";
-
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `
-          <div class="carousel" data-count="${imgs.length}">
-            <img class="lazy-img carousel-img"
-                 data-src="${imgs[0]}"
-                 data-images="${imgs.join("|")}"
-                 data-index="0"
-                 alt="${p.title}">
-            ${imgs.length > 1 ? `
-              <div class="arrow left">&#10094;</div>
-              <div class="arrow right">&#10095;</div>` : ""}
-            ${dots}
-          </div>
-          <div class="card-content">
-            <h3>${p.title}</h3>
-            <div class="descrizione">
-              ${p.short_description || ""}
-              ${p.description || ""}
-            </div>
-            <p class="sku"><strong>SKU:</strong> ${p.sku}</p>
-          </div>`;
-        grid.appendChild(card);
-      });
-
-      sec.appendChild(grid);
-      frag.appendChild(sec);
-    }
-
-    container.appendChild(frag);
-    initLazyImages();
-
-    /* mostra le descrizioni DOPO il primo paint */
-    requestAnimationFrame(() => {
-      document.querySelectorAll(".descrizione").forEach(d => {
-        d.style.display = "block";
-      });
-      inviaAltezza();
-    });
-
-  } catch(e) {
-    console.error(e);
-    container.innerHTML = "<p>Errore caricamento catalogo</p>";
-    inviaAltezza();
-  }
-}
-
-/* ================= CAROUSEL ================= */
-
-function changeImage(img, dir) {
-  const images = img.dataset.images.split("|");
-  let i = parseInt(img.dataset.index,10);
-  i = dir === "next" ? i+1 : i-1;
-  if (i<0) i = images.length-1;
-  if (i>=images.length) i = 0;
-  img.src = images[i];
-  img.dataset.index = i;
-
-  img.closest(".carousel")
-    .querySelectorAll(".dot")
-    .forEach((d,idx)=>d.classList.toggle("active", idx===i));
-}
-
-document.addEventListener("click", e => {
-  if (e.target.classList.contains("arrow")) {
-    const img = e.target.closest(".carousel").querySelector(".carousel-img");
-    changeImage(img, e.target.classList.contains("right") ? "next" : "prev");
-  }
-});
-
-let startX=null;
-document.addEventListener("touchstart", e=>{
-  const c = e.target.closest(".carousel");
-  if (!c || c.dataset.count==="1") return;
-  startX = e.touches[0].clientX;
-});
-document.addEventListener("touchend", e=>{
-  if(startX===null) return;
-  const c = e.target.closest(".carousel");
-  if (!c || c.dataset.count==="1") return;
-  const img = c.querySelector(".carousel-img");
-  const diff = e.changedTouches[0].clientX - startX;
-  startX=null;
-  if(Math.abs(diff)<40) return;
-  changeImage(img, diff<0?"next":"prev");
-});
-
-/* ================= START ================= */
-
-caricaCatalogo();
 </script>
+
 </body>
 </html>
