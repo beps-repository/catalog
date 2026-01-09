@@ -16,8 +16,9 @@ h2 {
   margin-top: 40px;
   border-bottom: 2px solid #ddd;
   padding-bottom: 5px;
-  text-transform: capitalize;
 }
+
+/* ===== STRUTTURA ===== */
 
 .categoria { margin-bottom: 60px; }
 
@@ -36,17 +37,25 @@ h2 {
   box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 
-/* ===== AREA IMMAGINE ===== */
+/* ===== AREA IMMAGINE (STABILE) ===== */
 
 .carousel {
   width: 360px;
   height: 360px;
   background: #fff;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+.img-slot {
+  width: 340px;
+  height: 340px;
+  background: #f0f0f0;
+}
+
+/* immagine inserita DOPO */
 .carousel-img {
   width: 340px;
   height: 340px;
@@ -54,9 +63,69 @@ h2 {
   display: block;
 }
 
+/* ===== FRECCE ===== */
+
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.45);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.arrow.left { left: 8px; }
+.arrow.right { right: 8px; }
+
+.carousel:hover .arrow { opacity: 1; }
+
+/* ===== DOTS ===== */
+
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  position: absolute;
+  bottom: 8px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ccc;
+}
+.dot.active { background: #00a6c7; }
+
+/* ===== TESTO ===== */
+
+.card-content { flex: 1; }
+
+.card-content h3 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+}
+
+.card-content p {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+}
+
+.sku {
+  font-size: 0.85rem;
+  color: #666;
+}
+
 /* ===== PLACEHOLDER ===== */
 
-.placeholder .carousel-img,
+.placeholder .img-slot,
 .placeholder .text-line {
   background: linear-gradient(
     90deg,
@@ -83,40 +152,11 @@ h2 {
 .text-line.long { width: 95%; }
 .text-line.sku { width: 40%; }
 
-/* ===== TESTO ===== */
-
-.card-content { flex: 1; }
-
-.card-content h3 {
-  margin: 0 0 8px;
-  font-size: 1.2rem;
-}
-
-.descrizione {
-  display: none; /* attivata dopo primo paint */
-}
-
-.sku {
-  font-size: 0.85rem;
-  color: #666;
-}
-
 /* ===== MOBILE ===== */
 
 @media (max-width: 768px) {
-  .card {
-    flex-direction: column;
-    text-align: center;
-  }
-  .carousel {
-    width: 100%;
-    height: auto;
-  }
-  .carousel-img {
-    width: 100%;
-    max-width: 340px;
-    height: auto;
-  }
+  .card { flex-direction: column; }
+  .carousel { width: 100%; }
 }
 </style>
 </head>
@@ -133,24 +173,18 @@ const PLACEHOLDER_COUNT = 4;
 
 /* ================= UTIL ================= */
 
-function normalizeParam(v) {
-  return v ? v.toLowerCase().trim() : null;
-}
-
-function formatCategoriaLabel(value) {
-  if (!value) return "";
-  const s = value.replace(/-/g, " ").toLowerCase();
+function formatCategoriaLabel(v) {
+  if (!v) return "";
+  const s = v.replace(/-/g, " ").toLowerCase();
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 /* ================= URL PARAMS ================= */
 
 const params = new URLSearchParams(location.search);
-const categoriaRaw = params.get("categoria");
-const categoriaLabel = formatCategoriaLabel(categoriaRaw);
-const categoriaNorm = normalizeParam(categoriaLabel);
+const categoriaLabel = formatCategoriaLabel(params.get("categoria"));
 
-/* ================= INIT PLACEHOLDER ================= */
+/* ================= INIT UI (IMMEDIATO) ================= */
 
 const container = document.getElementById("catalogo");
 
@@ -164,111 +198,124 @@ container.appendChild(categoriaBlock);
 
 const grid = categoriaBlock.querySelector(".griglia");
 
+/* placeholder cards */
 for (let i = 0; i < PLACEHOLDER_COUNT; i++) {
   const card = document.createElement("div");
   card.className = "card placeholder";
   card.innerHTML = `
     <div class="carousel">
-      <div class="carousel-img"></div>
+      <div class="img-slot"></div>
     </div>
     <div class="card-content">
       <div class="text-line title"></div>
       <div class="text-line short"></div>
       <div class="text-line long"></div>
       <div class="text-line sku"></div>
-    </div>
-  `;
+    </div>`;
   grid.appendChild(card);
 }
 
-/* ================= IMMAGINI (COSTRUZIONE OBBLIGATORIA) ================= */
+/* ================= IMMAGINI (OBBLIGATORIO) ================= */
 
 function getProductImages(p) {
   const imgs = [];
-
   if (p.image_url) imgs.push(p.image_url);
 
   if (p.image_additional && p.image_path) {
     const base = "https://www.beps.it/items/";
-    const path = p.image_path.replace(/^\/+|\/+$/g, "") + "/";
-
-    p.image_additional
-      .split(",")
-      .map(i => i.trim())
-      .filter(Boolean)
-      .slice(0, 2)
-      .forEach(name => {
-        imgs.push(`${base}${path}jpg/${name}_300x300.jpg`);
-      });
+    const path = p.image_path.replace(/^\/+|\/+$/g,"") + "/";
+    p.image_additional.split(",").map(i=>i.trim()).filter(Boolean).slice(0,2)
+      .forEach(n => imgs.push(`${base}${path}jpg/${n}_300x300.jpg`));
   }
   return imgs;
 }
 
-/* ================= FETCH + RENDER ================= */
+/* ================= FETCH DATI ================= */
 
 fetch(PROXY_URL)
   .then(r => r.json())
   .then(prodotti => {
-    const filtrati = prodotti.filter(p => {
-      if (categoriaNorm) {
-        const cats = p.category?.toLowerCase().split(">").map(c => c.trim()) || [];
-        return cats.includes(categoriaNorm);
-      }
-      return true;
-    });
-
     grid.innerHTML = "";
 
-    filtrati.forEach(p => {
+    prodotti.forEach(p => {
       const imgs = getProductImages(p);
+      const dots = imgs.length > 1
+        ? `<div class="dots">${imgs.map((_,i)=>`<span class="dot ${i===0?"active":""}"></span>`).join("")}</div>`
+        : "";
 
       const card = document.createElement("div");
       card.className = "card";
       card.innerHTML = `
-        <div class="carousel">
-          <img class="carousel-img"
-               data-src="${imgs[0] || ""}"
-               alt="${p.title || ""}">
+        <div class="carousel" data-count="${imgs.length}">
+          <div class="img-slot"
+               data-images="${imgs.join("|")}"
+               data-index="0"></div>
+          ${imgs.length>1?`
+            <div class="arrow left">&#10094;</div>
+            <div class="arrow right">&#10095;</div>`:""}
+          ${dots}
         </div>
         <div class="card-content">
           <h3>${p.title || ""}</h3>
-          <div class="descrizione">
-            ${p.short_description || ""}
-            ${p.description || ""}
-          </div>
+          <p>${p.short_description || ""}</p>
           <p class="sku"><strong>SKU:</strong> ${p.sku || ""}</p>
-        </div>
-      `;
+        </div>`;
       grid.appendChild(card);
     });
 
-    initLazyImages();
-
-    /* mostra descrizioni dopo primo paint */
-    requestAnimationFrame(() => {
-      document.querySelectorAll(".descrizione").forEach(d => {
-        d.style.display = "block";
-      });
-    });
+    initProgressiveImages();
   });
 
-/* ================= LAZY IMMAGINI ================= */
+/* ================= IMMAGINI PROGRESSIVE ================= */
 
 const imageObserver = new IntersectionObserver(entries => {
   entries.forEach(e => {
     if (!e.isIntersecting) return;
-    const img = e.target;
-    img.src = img.dataset.src;
-    img.removeAttribute("data-src");
-    imageObserver.unobserve(img);
-  });
-}, { rootMargin: "100px" });
 
-function initLazyImages() {
-  document
-    .querySelectorAll("img.carousel-img[data-src]")
-    .forEach(img => imageObserver.observe(img));
+    const slot = e.target;
+    const images = slot.dataset.images.split("|");
+    const img = new Image();
+    img.src = images[0];
+    img.className = "carousel-img";
+    img.dataset.images = slot.dataset.images;
+    img.dataset.index = "0";
+
+    img.onload = () => {
+      slot.replaceWith(img);
+    };
+
+    imageObserver.unobserve(slot);
+  });
+}, { rootMargin: "150px" });
+
+function initProgressiveImages() {
+  document.querySelectorAll(".img-slot[data-images]")
+    .forEach(slot => imageObserver.observe(slot));
 }
+
+/* ================= CAROUSEL ================= */
+
+function changeImage(img, dir) {
+  const images = img.dataset.images.split("|");
+  let i = parseInt(img.dataset.index, 10);
+  i = dir === "next" ? i + 1 : i - 1;
+  if (i < 0) i = images.length - 1;
+  if (i >= images.length) i = 0;
+  img.src = images[i];
+  img.dataset.index = i;
+
+  img.closest(".carousel").querySelectorAll(".dot")
+    .forEach((d,idx)=>d.classList.toggle("active", idx === i));
+}
+
+document.addEventListener("click", e => {
+  if (e.target.classList.contains("arrow")) {
+    const img = e.target.closest(".carousel").querySelector(".carousel-img");
+    if (img) {
+      changeImage(img, e.target.classList.contains("right") ? "next" : "prev");
+    }
+  }
+});
 </script>
 
 </body>
