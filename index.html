@@ -164,19 +164,31 @@ function getQueryParams() {
   };
 }
 
+/* ===== COSTRUZIONE IMMAGINI (FIX QUI) ===== */
+
 function getProductImages(p) {
   const imgs = [];
-  if (p.image_url) imgs.push(p.image_url);
+
+  if (p.image_url) {
+    imgs.push(p.image_url);
+  }
 
   if (p.image_additional && p.image_path) {
     const base = "https://www.beps.it/items/";
+    const path = p.image_path.endsWith("/")
+      ? p.image_path
+      : p.image_path + "/";
+
     p.image_additional
       .split(",")
       .map(i => i.trim())
       .filter(Boolean)
-      .slice(0, 2) // max 3 totali
-      .forEach(n => imgs.push(`${base}${p.image_path}${n}_300x300.jpg`));
+      .slice(0, 2) // max 3 totali (1 principale + 2 extra)
+      .forEach(name => {
+        imgs.push(`${base}${path}jpg/${name}_300x300.jpg`);
+      });
   }
+
   return imgs;
 }
 
@@ -292,8 +304,8 @@ function changeImage(img, dir) {
   img.src = images[i];
   img.dataset.index = i;
 
-  const dots = carousel.querySelectorAll(".dot");
-  dots.forEach((d,idx)=>d.classList.toggle("active", idx===i));
+  carousel.querySelectorAll(".dot")
+    .forEach((d,idx)=>d.classList.toggle("active", idx===i));
 }
 
 document.addEventListener("click", e => {
