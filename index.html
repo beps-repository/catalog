@@ -1,149 +1,201 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Catalogo Beps</title>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  margin: 20px;
-  background: #fafafa;
-}
-
-h2 {
-  margin-top: 40px;
-  border-bottom: 2px solid #ddd;
-  padding-bottom: 5px;
-  text-transform: capitalize;
-}
-
-.categoria { margin-bottom: 60px; }
-
-.griglia {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.card {
-  display: flex;
-  gap: 20px;
-  background: #fff;
-  border: 1px solid #ddd;
-  padding: 15px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-}
-
-/* ===== CAROUSEL ===== */
-
-.carousel {
-  width: 360px;
-  position: relative;
-  user-select: none;
-  touch-action: pan-y;
-}
-
-.carousel[data-count="1"] .arrow {
-  display: none !important;
-}
-
-.carousel-img {
-  width: 100%;
-  min-height: 220px;
-  background: #f0f0f0;
-  object-fit: contain;
-  display: block;
-}
-
-.lazy-img {
-  filter: blur(10px);
-  transition: filter 0.3s ease;
-}
-.lazy-img[src] { filter: blur(0); }
-
-/* ===== FRECCE ===== */
-
-.arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.45);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.arrow.left { left: 8px; }
-.arrow.right { right: 8px; }
-
-.carousel:hover .arrow,
-.carousel.show-arrows .arrow {
-  opacity: 1;
-}
-
-/* ===== DOTS ===== */
-
-.dots {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #ccc;
-}
-
-.dot.active { background: #00a6c7; }
-
-/* ===== TESTO ===== */
-
-.card-content { flex: 1; }
-
-.card-content h3 {
-  margin: 0 0 8px;
-  font-size: 1.2rem;
-  color: #222;
-}
-
-.card-content p {
-  margin: 0 0 6px;
-  font-size: 0.95rem;
-  color: #444;
-}
-
-.sku {
-  font-size: 0.85rem;
-  color: #666;
-  margin-top: 8px;
-}
-
-/* ===== MOBILE ===== */
-
-@media (max-width: 768px) {
-  .card {
-    flex-direction: column;
-    text-align: center;
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background: #fafafa;
   }
-  .carousel { width: 100%; }
-}
+
+  h2 {
+    margin-top: 40px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 5px;
+    text-transform: capitalize;
+  }
+
+  .categoria { margin-bottom: 60px; }
+
+  .griglia {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .card {
+    display: flex;
+    gap: 20px;
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 15px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+
+    /* FIX performance: evita layout/paint delle card fuori viewport */
+    content-visibility: auto;
+    contain-intrinsic-size: 240px;
+  }
+
+  /* ===== CAROUSEL ===== */
+
+  .carousel {
+    width: 360px;
+    position: relative;
+    user-select: none;
+    touch-action: pan-y;
+  }
+
+  .carousel[data-count="1"] .arrow { display: none !important; }
+
+  .carousel-img {
+    width: 100%;
+    min-height: 220px;
+    background: #f0f0f0;
+    object-fit: contain;
+    display: block;
+  }
+
+  .lazy-img {
+    filter: blur(10px);
+    transition: filter 0.3s ease;
+  }
+  .lazy-img[src] { filter: blur(0); }
+
+  /* ===== FRECCE ===== */
+
+  .arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.45);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .arrow.left { left: 8px; }
+  .arrow.right { right: 8px; }
+
+  .carousel:hover .arrow,
+  .carousel.show-arrows .arrow { opacity: 1; }
+
+  /* ===== DOTS ===== */
+
+  .dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ccc;
+  }
+
+  .dot.active { background: #00a6c7; }
+
+  /* ===== TESTO ===== */
+
+  .card-content { flex: 1; }
+
+  .card-content h3 {
+    margin: 0 0 8px;
+    font-size: 1.2rem;
+    color: #222;
+  }
+
+  .card-content p {
+    margin: 0 0 6px;
+    font-size: 0.95rem;
+    color: #444;
+  }
+
+  .sku {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 8px;
+  }
+
+  /* ===== SKELETON (perceived performance) ===== */
+
+  .skeleton {
+    background: linear-gradient(90deg, #eee 25%, #f5f5f5 37%, #eee 63%);
+    background-size: 400% 100%;
+    animation: shimmer 1.2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 100% 0; }
+    100% { background-position: 0 0; }
+  }
+
+  .skeleton-wrap { display: flex; flex-direction: column; gap: 14px; }
+  .skeleton-row {
+    height: 18px;
+    border-radius: 6px;
+  }
+  .skeleton-card {
+    height: 260px;
+    border-radius: 8px;
+    border: 1px solid #e6e6e6;
+    background-color: #fff;
+    overflow: hidden;
+  }
+  .skeleton-card-inner {
+    display: flex;
+    gap: 20px;
+    padding: 15px;
+  }
+  .skeleton-img {
+    width: 360px;
+    min-height: 220px;
+    border-radius: 6px;
+  }
+  .skeleton-text { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+
+  /* ===== MOBILE ===== */
+
+  @media (max-width: 768px) {
+    .card { flex-direction: column; text-align: center; }
+    .carousel { width: 100%; }
+    .skeleton-card-inner { flex-direction: column; }
+    .skeleton-img { width: 100%; }
+  }
 </style>
 </head>
 
 <body>
-<div id="catalogo">Caricamento catalogo…</div>
+<div id="catalogo">
+  <!-- Skeleton immediato -->
+  <div class="skeleton-wrap">
+    <div class="skeleton-row skeleton" style="width: 45%"></div>
+    <div class="skeleton-card">
+      <div class="skeleton-card-inner">
+        <div class="skeleton-img skeleton"></div>
+        <div class="skeleton-text">
+          <div class="skeleton-row skeleton" style="width: 70%"></div>
+          <div class="skeleton-row skeleton" style="width: 95%"></div>
+          <div class="skeleton-row skeleton" style="width: 90%"></div>
+          <div class="skeleton-row skeleton" style="width: 55%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ================= CONFIG ================= */
@@ -164,7 +216,7 @@ function getQueryParams() {
   };
 }
 
-/* ================= IMMAGINI ================= */
+/* ===== COSTRUZIONE IMMAGINI (OBBLIGATORIA) ===== */
 
 function getProductImages(p) {
   const imgs = [];
@@ -172,30 +224,57 @@ function getProductImages(p) {
   if (p.image_url) imgs.push(p.image_url);
 
   if (p.image_additional && p.image_path) {
-    const base = "https://www.beps.it/items/";
-    const path = p.image_path.endsWith("/") ? p.image_path : p.image_path + "/";
+    const base = "https://www.beps.it/items";
+    const path = (p.image_path || "").endsWith("/")
+      ? p.image_path
+      : (p.image_path || "") + "/";
 
     p.image_additional
       .split(",")
       .map(i => i.trim())
       .filter(Boolean)
-      .slice(0, 2)
+      .slice(0, 2) // max 3 totali (1 principale + 2 extra)
       .forEach(name => {
         imgs.push(`${base}${path}jpg/${name}_300x300.jpg`);
       });
   }
+
   return imgs;
 }
 
-/* ================= LAZY OBSERVER (GLOBALE) ================= */
+/* ================= IFRAME RESIZE (progressivo) ================= */
+
+let resizeTimeout;
+function inviaAltezzaImmediata() {
+  // invio "best effort" immediato (utile per percezione + Google Sites)
+  try {
+    parent.postMessage({ frameHeight: document.body.scrollHeight }, "*");
+  } catch (_) {}
+}
+
+function inviaAltezza() {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    inviaAltezzaImmediata();
+  }, 80);
+}
+window.addEventListener("resize", inviaAltezza);
+
+/* ================= LAZY (1 observer globale) ================= */
 
 const imageObserver = new IntersectionObserver(entries => {
   entries.forEach(e => {
     if (!e.isIntersecting) return;
     const img = e.target;
+
+    // carica SOLO quando serve
     img.src = img.dataset.src;
     img.removeAttribute("data-src");
     imageObserver.unobserve(img);
+
+    // resize dopo load (iframe height più accurata)
+    img.addEventListener("load", inviaAltezza, { once: true });
+    img.addEventListener("error", inviaAltezza, { once: true });
   });
 }, {
   rootMargin: "100px",
@@ -208,13 +287,72 @@ function initLazyImages() {
   });
 }
 
-/* ================= CATALOGO ================= */
+/* ================= RENDER HELPERS ================= */
+
+function escapeAttr(s) {
+  // evita rotture HTML in attributi (minimo indispensabile)
+  return String(s ?? "").replace(/"/g, "&quot;");
+}
+
+function renderCategoria(cat, items) {
+  const sec = document.createElement("div");
+  sec.className = "categoria";
+  sec.innerHTML = `<h2>${cat}</h2>`;
+
+  const grid = document.createElement("div");
+  grid.className = "griglia";
+
+  const frag = document.createDocumentFragment();
+
+  items.forEach(p => {
+    const imgs = getProductImages(p);
+    const dots = imgs.length > 1
+      ? `<div class="dots">${imgs.map((_,i)=>`<span class="dot ${i===0?"active":""}"></span>`).join("")}</div>`
+      : "";
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    // NOTA: src NON impostato -> carica solo via observer o interazione
+    card.innerHTML = `
+      <div class="carousel" data-count="${imgs.length}">
+        <img class="lazy-img carousel-img"
+             loading="lazy"
+             data-src="${escapeAttr(imgs[0] || "")}"
+             data-images="${escapeAttr(imgs.join("|"))}"
+             data-index="0"
+             alt="${escapeAttr(p.title)}">
+        ${imgs.length > 1 ? `
+          <div class="arrow left">&#10094;</div>
+          <div class="arrow right">&#10095;</div>` : ""}
+        ${dots}
+      </div>
+      <div class="card-content">
+        <h3>${p.title || ""}</h3>
+        <p>${p.short_description || ""}</p>
+        <p>${p.description || ""}</p>
+        <p class="sku"><strong>SKU:</strong> ${p.sku || ""}</p>
+      </div>
+    `;
+
+    frag.appendChild(card);
+  });
+
+  grid.appendChild(frag);
+  sec.appendChild(grid);
+  return sec;
+}
+
+/* ================= CATALOGO (render incrementale) ================= */
 
 async function caricaCatalogo() {
   const container = document.getElementById("catalogo");
 
+  // resize subito (anche mentre c'è skeleton)
+  inviaAltezzaImmediata();
+
   try {
-    const res = await fetch(PROXY_URL);
+    const res = await fetch(PROXY_URL, { cache: "no-store" });
     const prodotti = await res.json();
     const { marca, categoria } = getQueryParams();
 
@@ -229,102 +367,97 @@ async function caricaCatalogo() {
 
     if (!filtrati.length) {
       container.innerHTML = "<p>Nessun prodotto trovato.</p>";
-      inviaAltezza();
+      inviaAltezzaImmediata();
       return;
     }
 
+    // raggruppa
     const gruppi = {};
     filtrati.forEach(p => {
       const c = p.category?.split(">").pop().trim() || "Senza categoria";
       (gruppi[c] ||= []).push(p);
     });
 
+    // svuota skeleton e prepara output
     container.innerHTML = "";
-    const frag = document.createDocumentFragment();
 
-    for (const [cat, items] of Object.entries(gruppi)) {
-      const sec = document.createElement("div");
-      sec.className = "categoria";
-      sec.innerHTML = `<h2>${cat}</h2>`;
+    // render incrementale per non bloccare main thread
+    const entries = Object.entries(gruppi);
 
-      const grid = document.createElement("div");
-      grid.className = "griglia";
+    for (let idx = 0; idx < entries.length; idx++) {
+      const [cat, items] = entries[idx];
 
-      items.forEach(p => {
-        const imgs = getProductImages(p);
-        const dots = imgs.length > 1
-          ? `<div class="dots">${imgs.map((_, i) =>
-              `<span class="dot ${i === 0 ? "active" : ""}"></span>`).join("")}</div>`
-          : "";
+      const sec = renderCategoria(cat, items);
+      container.appendChild(sec);
 
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `
-          <div class="carousel" data-count="${imgs.length}">
-            <img class="lazy-img carousel-img"
-              loading="lazy"
-              data-src="${imgs[0]}"
-              data-images="${imgs.join("|")}"
-              data-index="0"
-              alt="${p.title}">
-            ${imgs.length > 1 ? `
-              <div class="arrow left">&#10094;</div>
-              <div class="arrow right">&#10095;</div>` : ""}
-            ${dots}
-          </div>
-          <div class="card-content">
-            <h3>${p.title}</h3>
-            <p>${p.short_description || ""}</p>
-            <p>${p.description || ""}</p>
-            <p class="sku"><strong>SKU:</strong> ${p.sku}</p>
-          </div>`;
-        grid.appendChild(card);
-      });
+      // resize progressivo
+      inviaAltezzaImmediata();
 
-      sec.appendChild(grid);
-      frag.appendChild(sec);
+      // lascia respirare il browser (paint tra una categoria e l’altra)
+      await new Promise(r => requestAnimationFrame(r));
     }
 
-    container.appendChild(frag);
-    initLazyImages();
-    inviaAltezza();
+    // init lazy dopo il primo paint (priorità al render)
+    setTimeout(() => {
+      initLazyImages();
+      inviaAltezza();
+    }, 0);
 
   } catch (e) {
     console.error(e);
     container.innerHTML = "<p>Errore caricamento catalogo</p>";
-    inviaAltezza();
+    inviaAltezzaImmediata();
   }
 }
 
-/* ================= CAROUSEL ================= */
+/* ================= CAROUSEL (on-demand) ================= */
 
 function loadIfNeeded(img, src) {
-  if (img.src && img.src.includes(src)) return;
-  img.src = src;
+  if (!src) return;
+
+  // se non è stata ancora caricata la prima (lazy), caricala ora
+  if (img.dataset.src) {
+    img.src = img.dataset.src;
+    img.removeAttribute("data-src");
+    imageObserver.unobserve(img);
+  }
+
+  // poi cambia slide (senza preload di massa)
+  if (!img.src || !img.src.includes(src)) {
+    img.src = src;
+  }
 }
 
 function changeImage(img, dir) {
   const carousel = img.closest(".carousel");
-  if (carousel.dataset.count === "1") return;
+  if (!carousel || carousel.dataset.count === "1") return;
 
-  const images = img.dataset.images.split("|");
-  let i = parseInt(img.dataset.index, 10);
+  const images = (img.dataset.images || "").split("|").filter(Boolean);
+  if (!images.length) return;
+
+  let i = parseInt(img.dataset.index, 10) || 0;
   i = dir === "next" ? i + 1 : i - 1;
   if (i < 0) i = images.length - 1;
   if (i >= images.length) i = 0;
 
   loadIfNeeded(img, images[i]);
-  img.dataset.index = i;
+  img.dataset.index = String(i);
 
   carousel.querySelectorAll(".dot")
     .forEach((d, idx) => d.classList.toggle("active", idx === i));
+
+  inviaAltezza();
 }
 
 document.addEventListener("click", e => {
-  if (e.target.classList.contains("arrow")) {
-    const img = e.target.closest(".carousel").querySelector(".carousel-img");
-    changeImage(img, e.target.classList.contains("right") ? "next" : "prev");
-  }
+  const arrow = e.target.closest(".arrow");
+  if (!arrow) return;
+
+  const carousel = arrow.closest(".carousel");
+  const img = carousel?.querySelector(".carousel-img");
+  if (!img) return;
+
+  changeImage(img, arrow.classList.contains("right") ? "next" : "prev");
 });
 
 let startX = null;
@@ -332,31 +465,23 @@ document.addEventListener("touchstart", e => {
   const carousel = e.target.closest(".carousel");
   if (!carousel || carousel.dataset.count === "1") return;
   startX = e.touches[0].clientX;
-});
+}, { passive: true });
 
 document.addEventListener("touchend", e => {
   if (startX === null) return;
+
   const carousel = e.target.closest(".carousel");
-  if (!carousel || carousel.dataset.count === "1") return;
+  if (!carousel || carousel.dataset.count === "1") { startX = null; return; }
 
   const img = carousel.querySelector(".carousel-img");
+  if (!img) { startX = null; return; }
+
   const diff = e.changedTouches[0].clientX - startX;
   startX = null;
 
   if (Math.abs(diff) < 40) return;
   changeImage(img, diff < 0 ? "next" : "prev");
-});
-
-/* ================= IFRAME ================= */
-
-let resizeTimeout;
-function inviaAltezza() {
-  clearTimeout(resizeTimeout);
-  resizeTimeout = setTimeout(() => {
-    parent.postMessage({ frameHeight: document.body.scrollHeight }, "*");
-  }, 100);
-}
-window.addEventListener("resize", inviaAltezza);
+}, { passive: true });
 
 /* ================= START ================= */
 
