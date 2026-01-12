@@ -184,6 +184,15 @@ function formatCategoriaLabel(v) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/* 🔧 FIX LINK BEPS (AGGIUNTA) */
+function fixBepsLinks(html) {
+  if (!html) return "";
+  return html.replace(
+    /href="(\/items\/[^"]+)"/g,
+    'href="https://www.beps.it$1"'
+  );
+}
+
 /* ================= URL PARAMS ================= */
 
 const params = new URLSearchParams(location.search);
@@ -191,7 +200,7 @@ const marcaFilter = normalize(params.get("marca"));
 const categoriaFilter = normalize(params.get("categoria"));
 const categoriaLabel = formatCategoriaLabel(params.get("categoria"));
 
-/* ================= INIT UI (IMMEDIATO) ================= */
+/* ================= INIT UI ================= */
 
 const container = document.getElementById("catalogo");
 
@@ -205,7 +214,7 @@ container.appendChild(categoriaBlock);
 
 const grid = categoriaBlock.querySelector(".griglia");
 
-/* placeholder cards */
+/* placeholder */
 for (let i=0;i<PLACEHOLDER_COUNT;i++) {
   const card = document.createElement("div");
   card.className = "card placeholder";
@@ -222,7 +231,7 @@ for (let i=0;i<PLACEHOLDER_COUNT;i++) {
   grid.appendChild(card);
 }
 
-/* ================= IMMAGINI (OBBLIGATORIO) ================= */
+/* ================= IMMAGINI ================= */
 
 function getProductImages(p) {
   const imgs = [];
@@ -238,13 +247,13 @@ function getProductImages(p) {
       .filter(Boolean)
       .slice(0,2)
       .forEach(n => {
-        imgs.push(`${base}${path}jpg/${n}_300x300.jpg`);
+        imgs.push(`${base}${path}jpg/${n}_300x300.jpg(all)});
       });
   }
   return imgs;
 }
 
-/* ================= FETCH + FILTER ================= */
+/* ================= FETCH ================= */
 
 fetch(PROXY_URL)
   .then(r=>r.json())
@@ -291,7 +300,7 @@ fetch(PROXY_URL)
         <div class="card-content">
           <h3>${p.title || ""}</h3>
           <p>${p.short_description || ""}</p>
-          <p>${p.description || ""}</p>
+          <p>${fixBepsLinks(p.description)}</p>
           <p class="sku"><strong>SKU:</strong> ${p.sku || ""}</p>
         </div>`;
       grid.appendChild(card);
