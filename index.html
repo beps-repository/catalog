@@ -139,23 +139,33 @@ function formatCategoriaLabel(v) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/* 🔗 FIX LINK DESCRIZIONE */
+/* ================= FIX LINK DESCRIZIONE (ROBUSTO) ================= */
+
 function fixDescriptionLinks(html) {
   if (!html) return "";
 
-  // completa link relativi
-  let out = html.replace(
-    /href="(\/[^"]+)"/g,
-    'href="https://www.beps.it$1"'
-  );
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = html;
 
-  // aggiunge target blank a TUTTI i link
-  out = out.replace(
-    /<a\s+/g,
-    '<a target="_blank" rel="noopener noreferrer" '
-  );
+  wrapper.querySelectorAll("a[href]").forEach(a => {
+    const href = a.getAttribute("href").trim();
 
-  return out;
+    // se NON è assoluto (http, https, mailto, tel)
+    if (
+      !href.startsWith("http://") &&
+      !href.startsWith("https://") &&
+      !href.startsWith("mailto:") &&
+      !href.startsWith("tel:")
+    ) {
+      const clean = href.replace(/^\/+/, "");
+      a.setAttribute("href", "https://www.beps.it/" + clean);
+    }
+
+    a.setAttribute("target", "_blank");
+    a.setAttribute("rel", "noopener noreferrer");
+  });
+
+  return wrapper.innerHTML;
 }
 
 /* ================= URL PARAMS ================= */
