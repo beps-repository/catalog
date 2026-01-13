@@ -117,18 +117,15 @@ h2 {
   .carousel {
     width: 100%;
     height: auto;
-    aspect-ratio: 1 / 1; /* mantiene quadrato */
+    aspect-ratio: 1 / 1;
   }
 
   .img-slot,
   .carousel-img {
     width: 100%;
     height: 100%;
-    max-width: 100%;
-    max-height: 100%;
   }
 }
-  
 </style>
 </head>
 
@@ -141,19 +138,25 @@ h2 {
 
 const PROXY_URL = "https://proxy-catalog-826935378869.europe-west1.run.app";
 
-/* ================= UTIL ================= */
+/* ================= NORMALIZZAZIONE (FIX DEFINITIVO) ================= */
 
-function normalize(v) {
-  return v ? v.toLowerCase().replace(/-/g," ").trim() : null;
+function normalize(str) {
+  return str
+    ? str
+        .toLowerCase()
+        .trim()
+        .replace(/[\s–—-]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+    : null;
 }
 
 function formatCategoriaLabel(v) {
   if (!v) return "";
-  const s = v.replace(/-/g," ").toLowerCase();
+  const s = v.replace(/-/g, " ").toLowerCase();
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/* ================= FIX LINK DESCRIZIONE (ROBUSTO) ================= */
+/* ================= FIX LINK DESCRIZIONE ================= */
 
 function fixDescriptionLinks(html) {
   if (!html) return "";
@@ -164,15 +167,16 @@ function fixDescriptionLinks(html) {
   wrapper.querySelectorAll("a[href]").forEach(a => {
     const href = a.getAttribute("href").trim();
 
-    // se NON è assoluto (http, https, mailto, tel)
     if (
       !href.startsWith("http://") &&
       !href.startsWith("https://") &&
       !href.startsWith("mailto:") &&
       !href.startsWith("tel:")
     ) {
-      const clean = href.replace(/^\/+/, "");
-      a.setAttribute("href", "https://www.beps.it/" + clean);
+      a.setAttribute(
+        "href",
+        "https://www.beps.it/" + href.replace(/^\/+/, "")
+      );
     }
 
     a.setAttribute("target", "_blank");
@@ -212,13 +216,13 @@ function getProductImages(p) {
 
   if (p.image_additional && p.image_path) {
     const base = "https://www.beps.it/items/";
-    const path = p.image_path.replace(/^\/+|\/+$/g,"") + "/";
+    const path = p.image_path.replace(/^\/+|\/+$/g, "") + "/";
 
     p.image_additional
       .split(",")
       .map(i => i.trim())
       .filter(Boolean)
-      .slice(0,2)
+      .slice(0, 2)
       .forEach(n => {
         imgs.push(`${base}${path}jpg/${n}_300x300.jpg`);
       });
@@ -234,12 +238,17 @@ fetch(PROXY_URL)
   .then(prodotti => {
 
     const filtrati = prodotti.filter(p => {
+
       if (marcaFilter && normalize(p.marca) !== marcaFilter) return false;
 
       if (categoriaFilter) {
-        const cats = p.category?.toLowerCase().split(">").map(c=>c.trim()) || [];
+        const cats = p.category
+          ? p.category.split(">").map(c => normalize(c))
+          : [];
+
         if (!cats.includes(categoriaFilter)) return false;
       }
+
       return true;
     });
 
@@ -252,7 +261,9 @@ fetch(PROXY_URL)
       const imgs = getProductImages(p);
 
       const dots = imgs.length > 1
-        ? `<div class="dots">${imgs.map((_,i)=>`<span class="dot ${i===0?"active":""}"></span>`).join("")}</div>`
+        ? `<div class="dots">
+            ${imgs.map((_,i)=>`<span class="dot ${i===0?"active":""}"></span>`).join("")}
+           </div>`
         : "";
 
       const card = document.createElement("div");
@@ -260,11 +271,13 @@ fetch(PROXY_URL)
       card.innerHTML = `
         <div class="carousel" data-count="${imgs.length}">
           <div class="img-slot" data-images="${imgs.join("|")}" data-index="0"></div>
-          ${imgs.length>1?`
+          ${imgs.length > 1 ? `
             <div class="arrow left">&#10094;</div>
-            <div class="arrow right">&#10095;</div>`:""}
+            <div class="arrow right">&#10095;</div>
+          ` : ""}
           ${dots}
         </div>
+
         <div class="card-content">
           <h3>${p.title || ""}</h3>
           <p>${p.short_description || ""}</p>
@@ -278,7 +291,7 @@ fetch(PROXY_URL)
     initImages();
   });
 
-/* ================= LAZY IMAGE ================= */
+/* ================= LAZY LOADING ================= */
 
 const observer = new IntersectionObserver(entries => {
   entries.forEach(e => {
@@ -296,7 +309,7 @@ const observer = new IntersectionObserver(entries => {
     img.onload = () => slot.replaceWith(img);
     observer.unobserve(slot);
   });
-},{ rootMargin:"150px" });
+},{ rootMargin: "150px" });
 
 function initImages() {
   document.querySelectorAll(".img-slot").forEach(s => observer.observe(s));
@@ -306,22 +319,28 @@ function initImages() {
 
 function changeImage(img, dir) {
   const images = img.dataset.images.split("|");
-  let i = parseInt(img.dataset.index,10);
-  i = dir==="next" ? i+1 : i-1;
-  if (i<0) i = images.length-1;
-  if (i>=images.length) i = 0;
+  let i = parseInt(img.dataset.index, 10);
+
+  i = dir === "next" ? i + 1 : i - 1;
+  if (i < 0) i = images.length - 1;
+  if (i >= images.length) i = 0;
+
   img.src = images[i];
   img.dataset.index = i;
 
-  img.closest(".carousel").querySelectorAll(".dot")
-    .forEach((d,idx)=>d.classList.toggle("active", idx===i));
+  img.closest(".carousel")
+    .querySelectorAll(".dot")
+    .forEach((d, idx) => d.classList.toggle("active", idx === i));
 }
 
 document.addEventListener("click", e => {
   if (e.target.classList.contains("arrow")) {
     const img = e.target.closest(".carousel").querySelector(".carousel-img");
     if (img) {
-      changeImage(img, e.target.classList.contains("right")?"next":"prev");
+      changeImage(
+        img,
+        e.target.classList.contains("right") ? "next" : "prev"
+      );
     }
   }
 });
