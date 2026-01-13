@@ -122,8 +122,8 @@ h2 {
 
   .img-slot,
   .carousel-img {
-    width: 100%;
-    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
   }
 }
 </style>
@@ -138,15 +138,11 @@ h2 {
 
 const PROXY_URL = "https://proxy-catalog-826935378869.europe-west1.run.app";
 
-/* ================= NORMALIZZAZIONE (FIX DEFINITIVO) ================= */
+/* ================= NORMALIZZAZIONE ================= */
 
 function normalize(str) {
   return str
-    ? str
-        .toLowerCase()
-        .trim()
-        .replace(/[\s–—-]+/g, "-")
-        .replace(/^-+|-+$/g, "")
+    ? str.toLowerCase().trim().replace(/[\s–—-]+/g, "-").replace(/^-+|-+$/g, "")
     : null;
 }
 
@@ -156,7 +152,7 @@ function formatCategoriaLabel(v) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/* ================= FIX LINK DESCRIZIONE ================= */
+/* ================= FIX LINK + IMG DESCRIZIONE ================= */
 
 function fixDescriptionLinks(html) {
   if (!html) return "";
@@ -164,6 +160,7 @@ function fixDescriptionLinks(html) {
   const wrapper = document.createElement("div");
   wrapper.innerHTML = html;
 
+  /* FIX <a href> */
   wrapper.querySelectorAll("a[href]").forEach(a => {
     const href = a.getAttribute("href").trim();
 
@@ -181,6 +178,24 @@ function fixDescriptionLinks(html) {
 
     a.setAttribute("target", "_blank");
     a.setAttribute("rel", "noopener noreferrer");
+  });
+
+  /* 🔴 FIX IMG SRC (UNICA AGGIUNTA) */
+  wrapper.querySelectorAll("img[src]").forEach(img => {
+    const src = img.getAttribute("src").trim();
+
+    if (
+      !src.startsWith("http://") &&
+      !src.startsWith("https://") &&
+      !src.startsWith("data:")
+    ) {
+      img.setAttribute(
+        "src",
+        "https://www.beps.it/" + src.replace(/^\/+/, "")
+      );
+    }
+
+    img.setAttribute("loading", "lazy");
   });
 
   return wrapper.innerHTML;
@@ -238,14 +253,12 @@ fetch(PROXY_URL)
   .then(prodotti => {
 
     const filtrati = prodotti.filter(p => {
-
       if (marcaFilter && normalize(p.marca) !== marcaFilter) return false;
 
       if (categoriaFilter) {
         const cats = p.category
           ? p.category.split(">").map(c => normalize(c))
           : [];
-
         if (!cats.includes(categoriaFilter)) return false;
       }
 
