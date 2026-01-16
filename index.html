@@ -204,7 +204,14 @@ function fixDescriptionLinks(html) {
 const params = new URLSearchParams(location.search);
 const marcaFilter = normalize(params.get("marca"));
 const categoriaFilter = normalize(params.get("categoria"));
-const tipologiaFilter = normalize(params.get("tipologia"));
+
+const tipologiaFilter = params.get("tipologia")
+  ? params.get("tipologia")
+      .split(",")
+      .map(t => normalize(t))
+      .filter(Boolean)
+  : null;
+
 const categoriaLabel = formatCategoriaLabel(params.get("categoria"));
 
 /* ================= INIT UI ================= */
@@ -261,7 +268,10 @@ fetch(PROXY_URL)
         if (!cats.includes(categoriaFilter)) return false;
       }
 
-      if (tipologiaFilter && normalize(p.tipologia) !== tipologiaFilter) return false;
+      if (
+        tipologiaFilter &&
+        !tipologiaFilter.includes(normalize(p.tipologia))
+      ) return false;
 
       return true;
     });
