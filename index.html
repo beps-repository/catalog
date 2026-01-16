@@ -160,7 +160,6 @@ function fixDescriptionLinks(html) {
   const wrapper = document.createElement("div");
   wrapper.innerHTML = html;
 
-  /* FIX <a href> */
   wrapper.querySelectorAll("a[href]").forEach(a => {
     const href = a.getAttribute("href").trim();
 
@@ -180,7 +179,6 @@ function fixDescriptionLinks(html) {
     a.setAttribute("rel", "noopener noreferrer");
   });
 
-  /* 🔴 FIX IMG SRC (UNICA AGGIUNTA) */
   wrapper.querySelectorAll("img[src]").forEach(img => {
     const src = img.getAttribute("src").trim();
 
@@ -206,6 +204,7 @@ function fixDescriptionLinks(html) {
 const params = new URLSearchParams(location.search);
 const marcaFilter = normalize(params.get("marca"));
 const categoriaFilter = normalize(params.get("categoria"));
+const tipologiaFilter = normalize(params.get("tipologia"));
 const categoriaLabel = formatCategoriaLabel(params.get("categoria"));
 
 /* ================= INIT UI ================= */
@@ -261,6 +260,8 @@ fetch(PROXY_URL)
           : [];
         if (!cats.includes(categoriaFilter)) return false;
       }
+
+      if (tipologiaFilter && normalize(p.tipologia) !== tipologiaFilter) return false;
 
       return true;
     });
