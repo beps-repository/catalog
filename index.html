@@ -233,23 +233,31 @@ const grid = categoriaBlock.querySelector(".griglia");
 function getProductImages(p) {
   const imgs = [];
 
-  if (p.image_url) imgs.push(p.image_url);
+  const base = "https://www.beps.it/items/";
+  const path = (p.image_path || "").replace(/^\/+|\/+$/g, "");
 
-  if (p.image_additional && p.image_path) {
-    const base = "https://www.beps.it/items/";
-    const path = p.image_path.replace(/^\/+|\/+$/g, "") + "/";
+  // Immagine principale
+  if (p.image_url) {
+    if (/^https?:\/\//i.test(p.image_url)) {
+      imgs.push(p.image_url);
+    } else if (path) {
+      imgs.push(`${base}${path}/jpg/${p.image_url}_900x900.jpg`);
+    }
+  }
 
+  // Immagini aggiuntive
+  if (p.image_additional && path) {
     p.image_additional
       .split(",")
       .map(i => i.trim())
       .filter(Boolean)
       .slice(0, 2)
       .forEach(n => {
-        imgs.push(`${base}${path}jpg/${n}_900x900.jpg`);
+        imgs.push(`${base}${path}/jpg/${n}_900x900.jpg`);
       });
   }
 
-  return imgs;
+  return imgs.slice(0, 3);
 }
 
 /* ================= FETCH ================= */
