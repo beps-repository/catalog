@@ -138,6 +138,12 @@ h2 {
 
 const PROXY_URL = "https://proxy-catalog-826935378869.europe-west1.run.app";
 
+// Immagini post-migrazione (galleria standard Magento)
+const MAGENTO_MEDIA_BASE = "https://www.beps.it/media/catalog/product/";
+// Immagini pre-migrazione (vecchio schema attributi image_main / image_additional)
+const LEGACY_BASE = "https://www.beps.it/items/";
+const MAX_IMAGES = 3;
+
 /* ================= NORMALIZZAZIONE ================= */
 
 function normalize(str) {
@@ -230,34 +236,69 @@ const grid = categoriaBlock.querySelector(".griglia");
 
 /* ================= IMMAGINI ================= */
 
-function getProductImages(p) {
-  const imgs = [];
+// Trasforma un valore Magento (URL assoluto, /g/u/file.jpg, g/u/file.jpg) in URL assoluto
+function toMagentoUrl(v) {
+  if (!v) return null;
+  const s = String(v).trim();
+  if (!s || /placeholder/i.test(s) || s === "no_selection") return null;
+  if (/^https?:\/\//i.test(s)) return s;
+  return MAGENTO_MEDIA_BASE + s.replace(/^\/+/, "").replace(/^media\/catalog\/product\//, "");
+}
 
-  const base = "https://www.beps.it/items/";
+// Divide un elenco di immagini qualunque sia il separatore (virgola, pipe, punto e virgola, spazi)
+function splitList(v) {
+  return v ? String(v).split(/[,|;\s]+/).map(s => s.trim()).filter(Boolean) : [];
+}
+
+// Chiave per deduplicare: nome file senza estensione/suffisso dimensione
+function imgKey(url) {
+  return url.split("?")[0].split("/").pop().replace(/(_\d+x\d+)?\.\w+$/, "").toLowerCase();
+}
+
+function getMagentoImages(p) {
+  const out = [];
+  const main = toMagentoUrl(p.image_magento);
+  if (main) out.push(main);
+  splitList(p.gallery_magento).map(toMagentoUrl).filter(Boolean).forEach(u => out.push(u));
+  return out;
+}
+
+function getLegacyImages(p) {
+  const out = [];
   const path = (p.image_path || "").replace(/^\/+|\/+$/g, "");
 
-  // Immagine principale
   if (p.image_url) {
     if (/^https?:\/\//i.test(p.image_url)) {
-      imgs.push(p.image_url);
+      out.push(p.image_url);
     } else if (path) {
-      imgs.push(`${base}${path}/jpg/${p.image_url}_900x900.jpg`);
+      out.push(`${LEGACY_BASE}${path}/jpg/${p.image_url}_900x900.jpg`);
     }
   }
 
-  // Immagini aggiuntive
   if (p.image_additional && path) {
-    p.image_additional
-      .split(",")
-      .map(i => i.trim())
-      .filter(Boolean)
-      .slice(0, 2)
-      .forEach(n => {
-        imgs.push(`${base}${path}/jpg/${n}_900x900.jpg`);
-      });
+    splitList(p.image_additional).forEach(n => {
+      out.push(`${LEGACY_BASE}${path}/jpg/${n}_900x900.jpg`);
+    });
   }
 
-  return imgs.slice(0, 3);
+  return out;
+}
+
+// Priorità: galleria Magento (post-migrazione); se vuota, vecchio schema
+function getProductImages(p) {
+  const magento = getMagentoImages(p);
+  const source = magento.length ? magento : getLegacyImages(p);
+
+  const seen = new Set();
+  const imgs = [];
+  for (const u of source) {
+    const k = imgKey(u);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    imgs.push(u);
+    if (imgs.length >= MAX_IMAGES) break;
+  }
+  return { imgs, fallback: magento.length ? getLegacyImages(p) : [] };
 }
 
 /* ================= FETCH ================= */
@@ -290,7 +331,7 @@ fetch(PROXY_URL)
     }
 
     filtrati.forEach(p => {
-      const imgs = getProductImages(p);
+      const { imgs, fallback } = getProductImages(p);
 
       const dots = imgs.length > 1
         ? `<div class="dots">
@@ -302,7 +343,7 @@ fetch(PROXY_URL)
       card.className = "card";
       card.innerHTML = `
         <div class="carousel" data-count="${imgs.length}">
-          <div class="img-slot" data-images="${imgs.join("|")}" data-index="0"></div>
+          <div class="img-slot" data-images="${imgs.join("|")}" data-fallback="${fallback.join("|")}" data-index="0"></div>
           ${imgs.length > 1 ? `
             <div class="arrow left">&#10094;</div>
             <div class="arrow right">&#10095;</div>
@@ -330,16 +371,30 @@ const observer = new IntersectionObserver(entries => {
     if (!e.isIntersecting) return;
 
     const slot = e.target;
-    const images = slot.dataset.images.split("|");
+    observer.unobserve(slot);
 
+    const images = slot.dataset.images ? slot.dataset.images.split("|") : [];
+    const fallback = slot.dataset.fallback ? slot.dataset.fallback.split("|") : [];
+    // Prova prima l'immagine principale, poi le alternative (incluso il vecchio schema)
+    const candidates = [...images, ...fallback];
+    if (!candidates.length) return;
+
+    let attempt = 0;
     const img = new Image();
-    img.src = images[0];
     img.className = "carousel-img";
     img.dataset.images = slot.dataset.images;
     img.dataset.index = "0";
 
-    img.onload = () => slot.replaceWith(img);
-    observer.unobserve(slot);
+    img.onload = () => {
+      img.onload = null;
+      img.onerror = null;
+      if (slot.isConnected) slot.replaceWith(img);
+    };
+    img.onerror = () => {
+      attempt++;
+      if (attempt < candidates.length) img.src = candidates[attempt];
+    };
+    img.src = candidates[0];
   });
 },{ rootMargin: "150px" });
 
